@@ -92,7 +92,7 @@ void test_pull_fair_queue_in (void *ctx)
     rc = zmq_getsockopt (pull, ZMQ_LAST_ENDPOINT, connect_address, &len);
     assert (rc == 0);
 
-    const size_t services = 5;
+    const uint8_t services = 5;
     void *pushs [services];
     for (size_t peer = 0; peer < services; ++peer)
     {
@@ -110,7 +110,7 @@ void test_pull_fair_queue_in (void *ctx)
     int second_half = 0;
 
     // Send 2N messages
-    for (size_t peer = 0; peer < services; ++peer) {
+    for (uint8_t peer = 0; peer < services; ++peer) {
         char *str = strdup("A");
 
         str [0] += peer;
@@ -132,7 +132,7 @@ void test_pull_fair_queue_in (void *ctx)
     assert (rc == 0);
 
     // Expect to pull one from each first
-    for (size_t peer = 0; peer < services; ++peer) {
+    for (uint8_t peer = 0; peer < services; ++peer) {
         rc = zmq_msg_recv (&msg, pull, 0);
         assert (rc == 2);
         const char *str = (const char *)zmq_msg_data (&msg);
@@ -141,7 +141,7 @@ void test_pull_fair_queue_in (void *ctx)
     assert (first_half == 0);
 
     // And then get the second batch
-    for (size_t peer = 0; peer < services; ++peer) {
+    for (uint8_t peer = 0; peer < services; ++peer) {
         rc = zmq_msg_recv (&msg, pull, 0);
         assert (rc == 2);
         const char *str = (const char *)zmq_msg_data (&msg);
@@ -267,6 +267,58 @@ void test_destroy_queue_on_disconnect (void *ctx)
     msleep (SETTLE_TIME);
 }
 
+void test_issue_2635 ()
+{
+    for (int i = 0; i < 1000000; i++) {
+        void *context = zmq_ctx_new ();
+        const char *endpoint = "inproc://test";
+
+        void *puller = zmq_socket (context, ZMQ_PULL);
+        if (!puller) {
+            printf ("Failed to create puller socker: %s", strerror (errno));
+            return;
+        }
+
+        if (zmq_bind (puller, endpoint)) {
+            printf ("Failed to bind: %s", strerror (errno));
+            return;
+        }
+
+        void *pusher = zmq_socket (context, ZMQ_PUSH);
+        if (!pusher) {
+            printf ("Failed to create pusher socker: %s", strerror (errno));
+            return;
+        }
+
+        if (zmq_connect (pusher, endpoint)) {
+            printf ("Failed to connect: %s", strerror (errno));
+            return;
+        }
+
+        if (zmq_unbind (puller, endpoint)) {
+            printf ("Failed to unbind: %s", strerror (errno));
+            return;
+        }
+
+        if (zmq_close (puller)) {
+            printf ("Failed to close puller: %s", strerror (errno));
+            return;
+        }
+
+        if (zmq_disconnect (pusher, endpoint)) {
+            printf ("Failed to disconnect: %s", strerror (errno));
+            return;
+        }
+
+        if (zmq_close (pusher)) {
+            printf ("Failed to close pusher: %s", strerror (errno));
+            return;
+        }
+
+        zmq_ctx_destroy (context);
+    }
+}
+
 int main (void)
 {
     setup_test_environment();
@@ -299,6 +351,8 @@ int main (void)
 
     int rc = zmq_ctx_term (ctx);
     assert (rc == 0);
+
+    test_issue_2635 ();
 
     return 0 ;
 }
