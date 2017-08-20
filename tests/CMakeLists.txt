@@ -194,6 +194,7 @@ target_sources(test_security_zap PRIVATE
   "testutil_security.hpp"
 )
 set_tests_properties(test_security_zap PROPERTIES TIMEOUT 60)
+set_tests_properties(test_spec_pushpull PROPERTIES TIMEOUT 60)
 
 #Check whether all tests in the current folder are present
 file(READ "${CMAKE_CURRENT_LIST_FILE}" CURRENT_LIST_FILE_CONTENT)
