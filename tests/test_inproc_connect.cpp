@@ -516,6 +516,53 @@ void test_shutdown_during_pend ()
     assert (rc == 0);
 }
 
+void test_connect_again_after_disconnect ()
+{
+    void *ctx = zmq_ctx_new ();
+    assert (ctx);
+
+    const char *address = "inproc://disconnect";
+
+    // Bind first
+    void *bindSocket = zmq_socket (ctx, ZMQ_PAIR);
+    assert (bindSocket);
+    int rc = zmq_bind (bindSocket, address);
+    assert (rc == 0);
+
+    // Now connect, disconnect and connect again
+    void *connectSocket = zmq_socket (ctx, ZMQ_PAIR);
+    assert (connectSocket);
+    rc = zmq_connect (connectSocket, address);
+    assert (rc == 0);
+    rc = zmq_disconnect (connectSocket, address);
+    assert (rc == 0);
+    rc = zmq_connect (connectSocket, address);
+    assert (rc == 0);
+
+    // Queue up some data
+    rc = zmq_send_const (connectSocket, "foobar", 6, 0);
+    assert (rc == 6);
+
+    // Read pending message
+    zmq_msg_t msg;
+    rc = zmq_msg_init (&msg);
+    assert (rc == 0);
+    rc = zmq_msg_recv (&msg, bindSocket, 0);
+    assert (rc == 6);
+    void *data = zmq_msg_data (&msg);
+    assert (memcmp ("foobar", data, 6) == 0);
+
+    // Cleanup
+    rc = zmq_close (connectSocket);
+    assert (rc == 0);
+
+    rc = zmq_close (bindSocket);
+    assert (rc == 0);
+
+    rc = zmq_ctx_term (ctx);
+    assert (rc == 0);
+}
+
 int main (void)
 {
     setup_test_environment ();
@@ -531,6 +578,7 @@ int main (void)
     test_connect_only ();
     test_unbind ();
     test_shutdown_during_pend ();
+    test_connect_again_after_disconnect ();
 
     return 0;
 }
