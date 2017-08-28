@@ -36,11 +36,13 @@
 #define __PGM_WININT_H__
 #endif
 
+#define restrict
 #include <pgm/pgm.h>
 
 #if defined(ZMQ_HAVE_OSX) || defined(ZMQ_HAVE_NETBSD)
 #include <pgm/in.h>
 #endif
+#undef restrict
 
 #include "fd.hpp"
 #include "options.hpp"
