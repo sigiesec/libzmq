@@ -546,11 +546,11 @@ number of outstanding messages 0MQ shall queue in memory for any single peer
 that the specified 'socket' is communicating with. A value of zero means no
 limit.
 
-If this limit has been reached the socket shall enter an exceptional state and
+When this limit has been reached the socket shall enter an exceptional deaf state and
 depending on the socket type, 0MQ shall take appropriate action such as
-blocking or dropping sent messages. Refer to the individual socket descriptions
-in linkzmq:zmq_socket[3] for details on the exact action taken for each socket
-type.
+stopping to receive messages or dropping received messages. Refer to the individual 
+socket descriptions in linkzmq:zmq_socket[3] for details on the exact action taken 
+for each socket type.
 
 [horizontal]
 Option value type:: int
@@ -678,7 +678,7 @@ number of outstanding messages 0MQ shall queue in memory for any single peer
 that the specified 'socket' is communicating with. A value of zero means no
 limit.
 
-If this limit has been reached the socket shall enter an exceptional state and
+When this limit has been reached the socket shall enter an exceptional mute state and
 depending on the socket type, 0MQ shall take appropriate action such as
 blocking or dropping sent messages. Refer to the individual socket descriptions
 in linkzmq:zmq_socket[3] for details on the exact action taken for each socket
