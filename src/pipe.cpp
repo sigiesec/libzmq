@@ -81,8 +81,6 @@ zmq::pipe_t::pipe_t (object_t *parent_, upipe_t *inpipe_, upipe_t *outpipe_,
     outpipe (outpipe_),
     in_active (true),
     out_active (true),
-    hwm (outhwm_),
-    lwm (compute_lwm (inhwm_)),
     inhwmboost(-1),
     outhwmboost(-1),
     msgs_read (0),
@@ -95,6 +93,7 @@ zmq::pipe_t::pipe_t (object_t *parent_, upipe_t *inpipe_, upipe_t *outpipe_,
     routing_id(0),
     conflate (conflate_)
 {
+    set_hwms (inhwm_, outhwm_);
 }
 
 zmq::pipe_t::~pipe_t ()
@@ -527,6 +526,8 @@ void zmq::pipe_t::set_hwms (int inhwm_, int outhwm_)
 
     lwm = compute_lwm(in);
     hwm = out;
+
+    zmq_assert (hwm <= 1 || lwm < hwm);
 }
 
 void zmq::pipe_t::set_hwms_boost(int inhwmboost_, int outhwmboost_)
