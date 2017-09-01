@@ -106,10 +106,11 @@ void test_get_peer_state ()
     TEST_ASSERT_SUCCESS_ERRNO (
       zmq_poller_add (poller, dealer1, NULL, ZMQ_POLLIN));
 
-    const unsigned int count = 10000;
+    const unsigned int count = 100000;
     const unsigned int event_size = 2;
     bool dealer2_blocked = false;
     unsigned int dealer1_sent = 0, dealer2_sent = 0, dealer1_received = 0;
+
     zmq_poller_event_t events[event_size];
     for (unsigned int iteration = 0; iteration < count; ++iteration) {
         TEST_ASSERT_SUCCESS_ERRNO (
