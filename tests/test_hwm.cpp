@@ -33,23 +33,57 @@ const int MAX_SENDS = 10000;
 
 enum TestType { BIND_FIRST, CONNECT_FIRST };
 
-int test_defaults ()
+typedef void (*create_push_pull_func_t) (void *, void **, void **);
+
+void create_push_pull_inproc (void *ctx,
+                              void **out_connect_socket,
+                              void **out_bind_socket)
+{
+    // Set up bind socket
+    *out_bind_socket = zmq_socket (ctx, ZMQ_PULL);
+    assert (*out_bind_socket);
+    int rc = zmq_bind (*out_bind_socket, "inproc://a");
+    assert (rc == 0);
+
+    // Set up connect socket
+    *out_connect_socket = zmq_socket (ctx, ZMQ_PUSH);
+    assert (*out_connect_socket);
+    rc = zmq_connect (*out_connect_socket, "inproc://a");
+    assert (rc == 0);
+}
+
+void create_push_pull_tcp (void *ctx,
+    void **out_connect_socket,
+    void **out_bind_socket)
+{
+    // Set up bind socket
+    *out_bind_socket = zmq_socket(ctx, ZMQ_PULL);
+    assert(*out_bind_socket);
+    int rc = zmq_bind(*out_bind_socket, "tcp://127.0.0.1:*");
+    assert(rc == 0);
+
+    size_t len = MAX_SOCKET_STRING;
+    char my_endpoint[MAX_SOCKET_STRING];
+    rc =
+      zmq_getsockopt (*out_bind_socket, ZMQ_LAST_ENDPOINT, my_endpoint, &len);
+    assert (rc == 0);
+
+    // Set up connect socket
+    *out_connect_socket = zmq_socket(ctx, ZMQ_PUSH);
+    assert(*out_connect_socket);
+    rc = zmq_connect(*out_connect_socket, my_endpoint);
+    assert(rc == 0);
+}
+
+int test_defaults (create_push_pull_func_t create_push_pull)
 {
     void *ctx = zmq_ctx_new ();
     assert (ctx);
     int rc;
 
-    // Set up bind socket
-    void *bind_socket = zmq_socket (ctx, ZMQ_PULL);
-    assert (bind_socket);
-    rc = zmq_bind (bind_socket, "inproc://a");
-    assert (rc == 0);
-
-    // Set up connect socket
-    void *connect_socket = zmq_socket (ctx, ZMQ_PUSH);
-    assert (connect_socket);
-    rc = zmq_connect (connect_socket, "inproc://a");
-    assert (rc == 0);
+    void *connect_socket;
+    void *bind_socket;
+    create_push_pull (ctx, &connect_socket, &bind_socket);
 
     // Send until we block
     int send_count = 0;
@@ -238,7 +272,10 @@ int test_inproc_bind_and_close_first (int send_hwm, int /* recv_hwm */)
     rc = zmq_close (bind_socket);
     assert (rc == 0);
 
-    /* Can't currently do connect without then wiring up a bind as things hang, this needs top be fixed.
+    // Can't currently do connect without then wiring up a bind as things 
+    // hang, this needs to be fixed.
+    // maybe related to #792 (https://github.com/zeromq/libzmq/issues/792)?
+#if 0
     // Set up connect socket
     void *connect_socket = zmq_socket (ctx, ZMQ_PULL);
     assert (connect_socket);
@@ -253,11 +290,11 @@ int test_inproc_bind_and_close_first (int send_hwm, int /* recv_hwm */)
         ++recv_count;
 
     assert (send_count == recv_count);
-    */
 
     // Clean up
-    //rc = zmq_close (connect_socket);
-    //assert (rc == 0);
+    rc = zmq_close (connect_socket);
+    assert (rc == 0);
+#endif
 
     rc = zmq_ctx_term (ctx);
     assert (rc == 0);
@@ -268,12 +305,24 @@ int test_inproc_bind_and_close_first (int send_hwm, int /* recv_hwm */)
 int main (void)
 {
     setup_test_environment();
+
+    //  see also test_sockopt_hwm for related tests
     
+    //  Default values are ZMQ_RCVHWM==1000 and ZMQ_SNDHWM==1000, so a total of 2000 
+    //  messages can be queued for sockets connected via inproc
+    int default_hwm_sum = 1000 + 1000;
+
     int count;
 
-    // Default values are 1000 on send and 1000 one receive, so 2000 total
-    count = test_defaults ();
-    assert (count == 2000);
+    //  test with defaults via inproc
+    count = test_defaults (&create_push_pull_inproc);
+    assert (count == default_hwm_sum);
+
+    //  test with defaults via tcp
+    count = test_defaults (&create_push_pull_tcp);
+    printf ("test_defaults (&create_push_pull_tcp) returned %i\n", count);
+    assert (count >= default_hwm_sum / 10);
+    assert (count < default_hwm_sum * 2);
 
     // Infinite send and receive buffer
     count = test_inproc_bind_first (0, 0);
