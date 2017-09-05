@@ -302,6 +302,80 @@ int test_inproc_bind_and_close_first (int send_hwm, int /* recv_hwm */)
     return send_count;
 }
 
+void test_set_and_get_hwm_tcp ()
+{
+    void *ctx = zmq_ctx_new ();
+    assert (ctx);
+
+
+    void *connect_socket;
+    void *bind_socket;
+    create_push_pull_tcp (ctx, &connect_socket, &bind_socket);
+
+    int rc;
+
+    // set HWMs on connect socket
+    int connect_rcvhwm = 50;
+    rc = zmq_setsockopt (connect_socket, ZMQ_RCVHWM, &connect_rcvhwm,
+                         sizeof (int));
+    assert (rc == 0);
+    int connect_sndhwm = 77;
+    rc = zmq_setsockopt (connect_socket, ZMQ_SNDHWM, &connect_sndhwm,
+                         sizeof (int));
+    assert (rc == 0);
+
+    // set HWMs on bind socket
+    int bind_rcvhwm = 42;
+    rc =
+      zmq_setsockopt (bind_socket, ZMQ_RCVHWM, &bind_rcvhwm, sizeof (int));
+    assert (rc == 0);
+    int bind_sndhwm = 63;
+    rc =
+      zmq_setsockopt (bind_socket, ZMQ_SNDHWM, &bind_sndhwm, sizeof (int));
+    assert (rc == 0);
+
+    msleep (SETTLE_TIME);
+
+    // get HWMs on connect socket
+    size_t hwm_size = sizeof (int);
+    int connect_rcvhwm_read;
+    rc = zmq_getsockopt (connect_socket, ZMQ_RCVHWM, &connect_rcvhwm_read,
+                         &hwm_size);
+    assert (rc == 0);
+    int connect_sndhwm_read;
+    rc = zmq_getsockopt (connect_socket, ZMQ_SNDHWM, &connect_sndhwm_read,
+                         &hwm_size);
+    assert (rc == 0);
+
+    // get HWMs on bind socket
+    int bind_rcvhwm_read;
+    rc =
+      zmq_getsockopt (bind_socket, ZMQ_RCVHWM, &bind_rcvhwm_read, &hwm_size);
+    assert (rc == 0);
+    int bind_sndhwm_read;
+    rc =
+      zmq_getsockopt (bind_socket, ZMQ_SNDHWM, &bind_sndhwm_read, &hwm_size);
+    assert (rc == 0);
+
+    // check HWMs
+    printf ("bind_rcvhwm_read == %i\n", bind_rcvhwm_read);
+    printf ("bind_sndhwm_read == %i\n", bind_sndhwm_read);
+    printf ("connect_rcvhwm_read == %i\n", connect_rcvhwm_read);
+    printf ("connect_sndhwm_read == %i\n", connect_sndhwm_read);
+    assert (bind_rcvhwm == bind_rcvhwm_read);
+    assert (bind_sndhwm == bind_sndhwm_read);
+    assert (connect_rcvhwm == connect_rcvhwm_read);
+    assert (connect_sndhwm == connect_sndhwm_read);
+
+    rc = zmq_close (connect_socket);
+    assert (rc == 0);
+    rc = zmq_close (bind_socket);
+    assert (rc == 0);
+
+    rc = zmq_ctx_term (ctx);
+    assert (rc == 0);
+}
+
 int main (void)
 {
     setup_test_environment();
@@ -323,6 +397,9 @@ int main (void)
     printf ("test_defaults (&create_push_pull_tcp) returned %i\n", count);
     assert (count >= default_hwm_sum / 10);
     assert (count < default_hwm_sum * 2);
+
+    //  test that the hwm values that can be read are the same that were set
+    test_set_and_get_hwm_tcp ();
 
     // Infinite send and receive buffer
     count = test_inproc_bind_first (0, 0);
