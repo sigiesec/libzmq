@@ -33,9 +33,16 @@
 #include "macros.hpp"
 #include "stdint.hpp"
 
-#if defined ZMQ_HAVE_OSX
+
+#include <time.h>
+
+#if defined ZMQ_HAVE_OSX && __MAC_OS_X_VERSION_MIN_REQUIRED < 101200 // less than macOS 10.12
 // TODO this is not required in this file, but condition_variable.hpp includes
 // clock.hpp to get these definitions
+#include <mach/clock.h>
+#include <mach/mach.h>
+#include <sys/time.h>
+int alt_clock_gettime (int clock_id, timespec *ts);
 #ifndef CLOCK_REALTIME
 #define CLOCK_REALTIME 0
 #endif
