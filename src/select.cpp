@@ -554,6 +554,7 @@ u_short zmq::select_t::get_fd_family (fd_t fd_)
     size_t i;
     for (i = 0; i < fd_family_cache_size; ++i) {
         const std::pair<fd_t, u_short> &entry = _fd_family_cache[i];
+
         if (entry.first == fd_) {
             return entry.second;
         }
@@ -602,9 +603,11 @@ u_short zmq::select_t::determine_fd_family (fd_t fd_)
     return AF_UNSPEC;
 }
 
-zmq::select_t::wsa_events_t::wsa_events_t ()
+
+zmq::wsa_events_t::wsa_events_t ()
 {
     events[0] = WSACreateEvent ();
+
     wsa_assert (events[0] != WSA_INVALID_EVENT);
     events[1] = WSACreateEvent ();
     wsa_assert (events[1] != WSA_INVALID_EVENT);
@@ -614,7 +617,7 @@ zmq::select_t::wsa_events_t::wsa_events_t ()
     wsa_assert (events[3] != WSA_INVALID_EVENT);
 }
 
-zmq::select_t::wsa_events_t::~wsa_events_t ()
+zmq::wsa_events_t::~wsa_events_t ()
 {
     wsa_assert (WSACloseEvent (events[0]));
     wsa_assert (WSACloseEvent (events[1]));
@@ -622,5 +625,224 @@ zmq::select_t::wsa_events_t::~wsa_events_t ()
     wsa_assert (WSACloseEvent (events[3]));
 }
 #endif
+
+#ifdef ZMQ_HAVE_WINDOWS
+zmq::wsa_event_select_t::wsa_event_select_t (const zmq::ctx_t &ctx_) :
+    ctx (ctx_),
+    stopping (false),
+    stale (false)
+{
+}
+
+zmq::wsa_event_select_t::~wsa_event_select_t ()
+{
+    worker.stop ();
+}
+
+zmq::wsa_event_select_t::handle_t
+zmq::wsa_event_select_t::add_fd (fd_t fd_, i_poll_events *events_)
+{
+    fd_entry_t fd_entry;
+    fd_entry.fd = fd_;
+    fd_entry.events = events_;
+    fd_entry.current_events = 0;
+    fd_entry.stale = true;
+    stale = true;
+
+    /** search for a retired entry */
+    size_t handle;
+    for (handle = 0; handle < fd_entries.size (); ++handle) {
+        if (fd_entries[handle].fd == retired_fd)
+            fd_entries[handle] = fd_entry;
+    }
+    if (handle == fd_entries.size ()) {
+        zmq_assert (fd_entries.size () < max_fds ());
+
+        fd_entries.push_back (fd_entry);
+    }
+
+    adjust_load (1);
+
+    return handle;
+}
+
+void zmq::wsa_event_select_t::rm_fd (handle_t handle_)
+{
+    zmq_assert (handle_ < fd_entries.size ());
+
+    WSAEventSelect (fd_entries[handle_].fd, NULL, 0);
+    fd_entries[handle_].fd = retired_fd;
+
+    adjust_load (-1);
+}
+
+int zmq::wsa_event_select_t::max_fds ()
+{
+    return WSA_MAXIMUM_WAIT_EVENTS;
+}
+
+#define CURRENT_EVENT_POLLIN 1
+#define CURRENT_EVENT_POLLOUT 2
+
+#define FD_POLLIN (FD_READ | FD_ACCEPT | FD_CLOSE)
+#define FD_POLLOUT (FD_WRITE | FD_CONNECT)
+
+void zmq::wsa_event_select_t::make_stale (handle_t handle_)
+{
+    fd_entries[handle_].stale = true;
+    stale = true;
+}
+
+void zmq::wsa_event_select_t::set_pollin (handle_t handle_)
+{
+    fd_entries[handle_].current_events |= CURRENT_EVENT_POLLIN;
+    make_stale (handle_);
+}
+
+void zmq::wsa_event_select_t::reset_pollin (handle_t handle_)
+{
+    fd_entries[handle_].current_events &= ~CURRENT_EVENT_POLLIN;
+    make_stale (handle_);
+}
+
+void zmq::wsa_event_select_t::set_pollout (handle_t handle_)
+{
+    fd_entries[handle_].current_events |= CURRENT_EVENT_POLLOUT;
+    make_stale (handle_);
+}
+
+void zmq::wsa_event_select_t::reset_pollout (handle_t handle_)
+{
+    fd_entries[handle_].current_events &= ~CURRENT_EVENT_POLLOUT;
+    make_stale (handle_);
+}
+
+void zmq::wsa_event_select_t::start ()
+{
+    ctx.start_thread (worker, worker_routine, this);
+}
+
+void zmq::wsa_event_select_t::stop ()
+{
+    stopping = true;
+}
+
+void zmq::wsa_event_select_t::loop ()
+{
+    while (!stopping) {
+        if (stale) {
+            update_events ();
+            stale = false;
+        }
+
+        //  Execute any due timers.
+        int timeout = (int) execute_timers ();
+
+        struct timeval tv = {(long) (timeout / 1000),
+                             (long) (timeout % 1000 * 1000)};
+
+        int rc = WSAWaitForMultipleEvents ((DWORD) wsa_events.size (),
+                                           wsa_events.data (), FALSE,
+                                           timeout ? timeout : INFINITE, FALSE);
+        wsa_assert (rc != (int) WSA_WAIT_FAILED);
+
+        if (rc == WSA_WAIT_TIMEOUT)
+            continue;
+
+        zmq_assert (rc >= WSA_WAIT_EVENT_0
+                    && rc < WSA_WAIT_EVENT_0 + wsa_events.size ());
+        for (handle_t handle = rc - WSA_WAIT_EVENT_0,
+                      original_size = wsa_events.size ();
+             handle < original_size; handle++) {
+            if (fd_entries[handle].fd == retired_fd)
+                continue;
+
+            rc =
+              WSAWaitForMultipleEvents (1, &wsa_events[handle], TRUE, 0, FALSE);
+            wsa_assert (rc != WSA_WAIT_FAILED);
+
+            if (rc == WSA_WAIT_EVENT_0) {
+                trigger_events (handle);
+            } else {
+                zmq_assert (rc == WSA_WAIT_TIMEOUT);
+            }
+        }
+    }
+    for (size_t i = 0; i < wsa_events.size (); ++i) {
+        BOOL res = WSACloseEvent (wsa_events[i]);
+        wsa_assert (res);
+    }
+}
+
+static long get_fd_events (int current_events)
+{
+    static long fd_events[] = {FD_OOB, FD_POLLIN | FD_OOB, FD_POLLOUT | FD_OOB,
+                               FD_POLLIN | FD_POLLOUT | FD_OOB};
+    return fd_events[current_events];
+}
+
+void zmq::wsa_event_select_t::update_event (handle_t handle_)
+{
+    int rc =
+      WSAEventSelect (fd_entries[handle_].fd, wsa_events[handle_],
+                      get_fd_events (fd_entries[handle_].current_events));
+    wsa_assert (rc != SOCKET_ERROR);
+
+    fd_entries[handle_].stale = false;
+}
+
+void zmq::wsa_event_select_t::update_events ()
+{
+    const size_t old_wsa_events_size = wsa_events.size ();
+    if (old_wsa_events_size < fd_entries.size ()) {
+        wsa_events.resize (fd_entries.size ());
+        for (size_t i = old_wsa_events_size; i < wsa_events.size (); ++i) {
+            wsa_events[i] = WSACreateEvent ();
+            wsa_assert (wsa_events[i] != WSA_INVALID_EVENT);
+        }
+    }
+    for (int i = 0; i < fd_entries.size (); ++i) {
+        if (fd_entries[i].stale)
+            update_event (i);
+    }
+}
+
+void zmq::wsa_event_select_t::trigger_events (handle_t handle_)
+{
+    WSANETWORKEVENTS network_events;
+    // memset (&network_events, 0, sizeof (network_events));
+    int rc = WSAEnumNetworkEvents (fd_entries[handle_].fd, wsa_events[handle_],
+                                   &network_events);
+    wsa_assert (rc != SOCKET_ERROR);
+
+    int events_emitted = 0;
+    if (network_events.lNetworkEvents & FD_POLLIN) {
+        fd_entries[handle_].events->in_event ();
+        events_emitted++;
+    }
+    if (network_events.lNetworkEvents & FD_POLLOUT) {
+        fd_entries[handle_].events->out_event ();
+        events_emitted++;
+    }
+    // TODO is it correct to ignore the error codes? is the corresponding flag in lNetworkEvents set if an error is present?
+    //if (network_events.iErrorCode[FD_READ_BIT] != 0
+    //    || network_events.iErrorCode[FD_WRITE_BIT] != 0
+    //    || network_events.iErrorCode[FD_ACCEPT_BIT] != 0
+    //    || network_events.iErrorCode[FD_CLOSE_BIT] != 0
+    //    || network_events.iErrorCode[FD_CONNECT_BIT] != 0
+    //    || network_events.iErrorCode[FD_OOB_BIT] != 0) {
+    //    fd_entries[i].events->in_event ();
+    //    event_emitted = true;
+    //}
+    zmq_assert (events_emitted);
+}
+
+void zmq::wsa_event_select_t::worker_routine (void *arg_)
+{
+    ((wsa_event_select_t *) arg_)->loop ();
+}
+
+#endif
+
 
 #endif

@@ -57,10 +57,22 @@ struct i_poll_events;
 //  Implements socket polling mechanism using POSIX.1-2001 select()
 //  function.
 
+static const size_t wsa_event_count = 4;
+
+struct wsa_events_t
+{
+    wsa_events_t ();
+    ~wsa_events_t ();
+
+    //  read, write, error and readwrite
+    WSAEVENT events[wsa_event_count];
+};
+
+
 class select_t : public worker_poller_base_t
 {
   public:
-    typedef fd_t handle_t;
+    typedef size_t handle_t;
 
     select_t (const thread_ctx_t &ctx_);
     ~select_t ();
@@ -122,15 +134,6 @@ class select_t : public worker_poller_base_t
 #if defined ZMQ_HAVE_WINDOWS
     typedef std::map<u_short, family_entry_t> family_entries_t;
 
-    struct wsa_events_t
-    {
-        wsa_events_t ();
-        ~wsa_events_t ();
-
-        //  read, write, error and readwrite
-        WSAEVENT events[4];
-    };
-
     family_entries_t _family_entries;
     // See loop for details.
     family_entries_t::iterator _current_family_entry_it;
@@ -163,7 +166,67 @@ class select_t : public worker_poller_base_t
     ZMQ_NON_COPYABLE_NOR_MOVABLE (select_t)
 };
 
+#ifdef ZMQ_HAVE_WINDOWS
+class wsa_event_select_t : public poller_base_t
+{
+  public:
+    typedef fd_t handle_t;
+
+    wsa_event_select_t (const ctx_t &ctx_);
+    ~wsa_event_select_t ();
+
+    //  "poller" concept.
+    handle_t add_fd (fd_t fd_, zmq::i_poll_events *events_);
+    void rm_fd (handle_t handle_);
+    void set_pollin (handle_t handle_);
+    void reset_pollin (handle_t handle_);
+    void set_pollout (handle_t handle_);
+    void reset_pollout (handle_t handle_);
+    void start ();
+    void stop ();
+
+    static int max_fds ();
+
+  private:
+    //  Main worker thread routine.
+    static void worker_routine (void *arg_);
+
+    //  Main event loop.
+    void loop ();
+
+
+    //  Reference to ZMQ context.
+    const ctx_t &ctx;
+
+    //  If true, thread is shutting down.
+    bool stopping;
+
+    //  Handle of the physical thread doing the I/O work.
+    thread_t worker;
+
+    std::vector<WSAEVENT> wsa_events;
+
+    struct fd_entry_t
+    {
+        fd_t fd;
+        zmq::i_poll_events *events;
+        int current_events;
+        bool stale;
+    };
+    typedef std::vector<fd_entry_t> fd_entries_t;
+    fd_entries_t fd_entries;
+    bool stale;
+
+    void update_event (handle_t handle_);
+    void update_events ();
+    void trigger_events (handle_t handle_);
+
+    void make_stale (handle_t handle_);
+};
+typedef wsa_event_select_t poller_t;
+#else
 typedef select_t poller_t;
+#endif
 }
 
 #endif
