@@ -661,7 +661,7 @@ zmq::wsa_event_select_t::add_fd (fd_t fd_, i_poll_events *events_)
         zmq_assert (fd_entries[handle].fd != fd_);
     }
     if (handle == fd_entries.size ()) {
-        zmq_assert (fd_entries.size () < max_fds ());
+        zmq_assert (fd_entries.size () < (size_t)max_fds ());
 
         fd_entries.push_back (fd_entry);
     }
@@ -756,7 +756,7 @@ void zmq::wsa_event_select_t::loop ()
             continue;
 
         zmq_assert (rc >= WSA_WAIT_EVENT_0
-                    && rc < WSA_WAIT_EVENT_0 + wsa_events.size ());
+                    && rc < (int)WSA_WAIT_EVENT_0 + wsa_events.size ());
         for (handle_t handle = rc - WSA_WAIT_EVENT_0,
                       original_size = wsa_events.size ();
              handle < original_size; handle++) {
@@ -816,7 +816,7 @@ void zmq::wsa_event_select_t::update_events ()
             wsa_assert (wsa_events[i] != WSA_INVALID_EVENT);
         }
     }
-    for (int i = 0; i < fd_entries.size (); ++i) {
+    for (int i = 0; i < (int)fd_entries.size (); ++i) {
         if (fd_entries[i].stale)
             update_event (i);
     }
