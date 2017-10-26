@@ -652,8 +652,13 @@ zmq::wsa_event_select_t::add_fd (fd_t fd_, i_poll_events *events_)
     /** search for a retired entry */
     size_t handle;
     for (handle = 0; handle < fd_entries.size (); ++handle) {
-        if (fd_entries[handle].fd == retired_fd)
+        if (fd_entries[handle].fd == retired_fd) {
             fd_entries[handle] = fd_entry;
+            break;
+        }
+
+        // check that fd_ is not already present!
+        zmq_assert (fd_entries[handle].fd != fd_);
     }
     if (handle == fd_entries.size ()) {
         zmq_assert (fd_entries.size () < max_fds ());
@@ -668,10 +673,11 @@ zmq::wsa_event_select_t::add_fd (fd_t fd_, i_poll_events *events_)
 
 void zmq::wsa_event_select_t::rm_fd (handle_t handle_)
 {
-    zmq_assert (handle_ < fd_entries.size ());
+    fd_t &fd = fd_entries[handle_].fd;
+    zmq_assert (handle_ < fd_entries.size () && fd != retired_fd);
 
-    WSAEventSelect (fd_entries[handle_].fd, NULL, 0);
-    fd_entries[handle_].fd = retired_fd;
+    WSAEventSelect (fd, NULL, 0);
+    fd = retired_fd;
 
     adjust_load (-1);
 }
@@ -781,12 +787,21 @@ static long get_fd_events (int current_events)
     return fd_events[current_events];
 }
 
-void zmq::wsa_event_select_t::update_event (handle_t handle_)
+void zmq::wsa_event_select_t::update_event (const handle_t handle_)
 {
-    int rc =
-      WSAEventSelect (fd_entries[handle_].fd, wsa_events[handle_],
-                      get_fd_events (fd_entries[handle_].current_events));
-    wsa_assert (rc != SOCKET_ERROR);
+    //  TODO probably unnecessary
+    //{
+    //    int rc =
+    //        WSAEventSelect(fd_entries[handle_].fd, NULL, 0);
+    //    wsa_assert(rc != SOCKET_ERROR);
+    //}
+    fd_t fd = fd_entries[handle_].fd;
+    if (fd != retired_fd) {
+        int rc =
+          WSAEventSelect (fd, wsa_events[handle_],
+                          get_fd_events (fd_entries[handle_].current_events));
+        wsa_assert (rc != SOCKET_ERROR);
+    }
 
     fd_entries[handle_].stale = false;
 }
@@ -834,7 +849,8 @@ void zmq::wsa_event_select_t::trigger_events (handle_t handle_)
     //    fd_entries[i].events->in_event ();
     //    event_emitted = true;
     //}
-    zmq_assert (events_emitted);
+    //  TODO why can network_events.lNetworkEvents be 0 ? trigger_events is only called when WSAWaitForMultipleEvents was successful for the corresponding socket
+    zmq_assert(events_emitted || !network_events.lNetworkEvents);
 }
 
 void zmq::wsa_event_select_t::worker_routine (void *arg_)
