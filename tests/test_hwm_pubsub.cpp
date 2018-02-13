@@ -253,6 +253,61 @@ void test_blocking_2000_6000 ()
     assert (count == 6000);
 }
 
+void gen_topic (int n, char *topic)
+{
+    // Simple hash function to generate a subscription prefix from a number.
+    n = (n * 2654435761);
+    sprintf (topic, "%08x", n);
+}
+
+void getsockopt_events_within_many_subscriptions (void *sub, int i)
+{
+    char topic[8];
+    char opt[256];
+    size_t opt_len = 256;
+
+    int n = 10000;
+
+    for (int j = 0; j < n; ++j) {
+        gen_topic (j, topic);
+        zmq_setsockopt (sub, ZMQ_SUBSCRIBE, &topic, 8);
+        // CRASH: Get ZMQ_EVENTS from a SUB socket.
+        zmq_getsockopt (sub, ZMQ_EVENTS, opt, &opt_len);
+    }
+    for (int j = 0; j < n; ++j) {
+        gen_topic (j, topic);
+        zmq_setsockopt (sub, ZMQ_UNSUBSCRIBE, &topic, 8);
+        // CRASH: Get ZMQ_EVENTS from a SUB socket.
+        zmq_getsockopt (sub, ZMQ_EVENTS, opt, &opt_len);
+    }
+}
+
+void test_issue_2943 ()
+{
+    void *context = zmq_ctx_new ();
+    void *pub = zmq_socket (context, ZMQ_PUB);
+    void *sub;
+
+    char addr[256];
+    size_t addr_len = 256;
+    char opt[256];
+    size_t opt_len = 256;
+    int sub_hwm = 1;
+
+    zmq_bind (pub, "tcp://127.0.0.1:*");
+    zmq_getsockopt (pub, ZMQ_LAST_ENDPOINT, addr, &addr_len);
+
+    for (int i = 0; i < 100; ++i) {
+        sub = zmq_socket (context, ZMQ_SUB);
+        zmq_setsockopt (sub, ZMQ_SNDHWM, &sub_hwm, sizeof (sub_hwm));
+
+        zmq_connect (sub, addr);
+        zmq_getsockopt (pub, ZMQ_EVENTS, opt, &opt_len);
+
+        getsockopt_events_within_many_subscriptions (sub, i);
+    }
+}
+
 int main (void)
 {
     setup_test_environment ();
@@ -263,5 +318,7 @@ int main (void)
 
     // hwm should apply to the messages that have already been received
     RUN_TEST (test_reset_hwm);
+
+    RUN_TEST (test_issue_2943);
     return UNITY_END ();
 }
