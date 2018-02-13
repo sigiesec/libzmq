@@ -29,6 +29,15 @@
 
 #include "testutil.hpp"
 
+#include <unity.h>
+
+void setUp ()
+{
+}
+void tearDown ()
+{
+}
+
 // const int MAX_SENDS = 10000;
 
 int test_defaults (int send_hwm, int msgCnt)
@@ -227,22 +236,32 @@ void test_reset_hwm ()
     assert (rc == 0);
 }
 
-int main (void)
+void test_defaults_1000_1000 ()
 {
-    setup_test_environment ();
-
     int count;
 
     // send 1000 msg on hwm 1000, receive 1000
     count = test_defaults (1000, 1000);
     assert (count == 1000);
+}
 
+void test_blocking_2000_6000 ()
+{
+    int count;
     // send 6000 msg on hwm 2000, drops above hwm, only receive hwm
     count = test_blocking (2000, 6000);
     assert (count == 6000);
+}
+
+int main (void)
+{
+    setup_test_environment ();
+
+    UNITY_BEGIN ();
+    RUN_TEST (test_defaults_1000_1000);
+    RUN_TEST (test_blocking_2000_6000);
 
     // hwm should apply to the messages that have already been received
-    test_reset_hwm ();
-
-    return 0;
+    RUN_TEST (test_reset_hwm);
+    return UNITY_END ();
 }

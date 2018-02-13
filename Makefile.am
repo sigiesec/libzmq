@@ -463,7 +463,8 @@ tests_test_hwm_SOURCES = tests/test_hwm.cpp
 tests_test_hwm_LDADD = src/libzmq.la
 
 tests_test_hwm_pubsub_SOURCES = tests/test_hwm_pubsub.cpp
-tests_test_hwm_pubsub_LDADD = src/libzmq.la
+tests_test_hwm_pubsub_LDADD = src/libzmq.la ${UNITY_LIBS}
+tests_test_hwm_pubsub_CPPFLAGS = ${UNITY_CPPFLAGS}
 
 tests_test_reqrep_device_SOURCES = tests/test_reqrep_device.cpp
 tests_test_reqrep_device_LDADD = src/libzmq.la
