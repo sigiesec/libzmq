@@ -262,7 +262,7 @@ void gen_topic (int n, char *topic)
 
 void getsockopt_events_within_many_subscriptions (void *sub, int i)
 {
-    char topic[8];
+    char topic[9];
     char opt[256];
     size_t opt_len = 256;
 
