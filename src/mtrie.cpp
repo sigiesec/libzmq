@@ -287,7 +287,9 @@ bool zmq::mtrie_t::rm_helper (unsigned char *prefix_,
     if (!size_) {
         if (pipes) {
             pipes_t::size_type erased = pipes->erase (pipe_);
-            zmq_assert (erased == 1);
+            zmq_assert (
+              erased
+              <= 1); // TODO consider this in the return value. do we need three distinct return values?
             if (pipes->empty ()) {
                 LIBZMQ_DELETE (pipes);
             }
