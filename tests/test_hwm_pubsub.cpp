@@ -282,7 +282,7 @@ void getsockopt_events_within_many_subscriptions (void *sub, int i)
     }
 }
 
-void test_issue_2943 ()
+void test_issue_2942 ()
 {
     void *context = zmq_ctx_new ();
     void *pub = zmq_socket (context, ZMQ_PUB);
@@ -319,6 +319,6 @@ int main (void)
     // hwm should apply to the messages that have already been received
     RUN_TEST (test_reset_hwm);
 
-    RUN_TEST (test_issue_2943);
+    RUN_TEST (test_issue_2942);
     return UNITY_END ();
 }
