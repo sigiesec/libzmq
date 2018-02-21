@@ -86,13 +86,15 @@ class select_t : public worker_poller_base_t
     {
         fds_set_t ();
         fds_set_t (const fds_set_t &other_);
-        fds_set_t &operator= (const fds_set_t &other_);
-        //  Convenience method to descriptor from all sets.
+        //  Convenience method to remove descriptor from all sets.
         void remove_fd (const fd_t &fd_);
 
         fd_set read;
         fd_set write;
         fd_set error;
+
+      private:
+        fds_set_t &operator= (const fds_set_t &other_);
     };
 
     struct fd_entry_t
