@@ -1282,7 +1282,7 @@ int zmq_poller_wait_all (void *poller_,
     if (-1 == check_poller (poller_))
         return -1;
 
-    if (!events_) {
+    if (!events_ && n_events_) {
         errno = EFAULT;
         return -1;
     }

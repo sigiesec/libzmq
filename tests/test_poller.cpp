@@ -311,14 +311,25 @@ void call_poller_wait_all_null_event_fails_event_count_nonzero (void *poller_)
                                zmq_poller_wait_all (poller_, NULL, 1, 0));
 }
 
-void call_poller_wait_all_null_event_fails_event_count_zero (void *poller_)
+void call_poller_wait_all_null_event_fails_event_count_zero_timeout_zero (
+    void *poller_)
 {
-#if 0
-    //  TODO this causes an assertion, which is not consistent if the number
-    //  of events may be 0, the pointer should be allowed to by NULL in that
-    //  case too
-    TEST_ASSERT_SUCCESS_ERRNO (zmq_poller_wait_all (poller, NULL, 0, 0));
-#endif
+    TEST_ASSERT_FAILURE_ERRNO (EAGAIN,
+                               zmq_poller_wait_all (poller_, NULL, 0, 0));
+}
+
+void call_poller_wait_all_null_event_fails_event_count_zero_timeout_nonzero (
+  void *poller)
+{
+    TEST_ASSERT_FAILURE_ERRNO (EAGAIN,
+                               zmq_poller_wait_all (poller, NULL, 0, 50));
+}
+
+void call_poller_wait_all_null_event_fails_event_count_zero_no_timeout (
+  void *poller)
+{
+    TEST_ASSERT_FAILURE_ERRNO (EFAULT,
+                               zmq_poller_wait_all (poller, NULL, 0, -1));
 }
 
 #define TEST_CASE_FUNC_PARAM(name, func)                                       \
@@ -327,8 +338,15 @@ void call_poller_wait_all_null_event_fails_event_count_zero (void *poller_)
 TEST_CASE_FUNC_PARAM (call_poller_wait_null_event_fails, test_with_valid_poller)
 TEST_CASE_FUNC_PARAM (call_poller_wait_all_null_event_fails_event_count_nonzero,
                       test_with_valid_poller)
-TEST_CASE_FUNC_PARAM (call_poller_wait_all_null_event_fails_event_count_zero,
-                      test_with_valid_poller)
+TEST_CASE_FUNC_PARAM (
+  call_poller_wait_all_null_event_fails_event_count_zero_no_timeout,
+  test_with_valid_poller)
+TEST_CASE_FUNC_PARAM (
+  call_poller_wait_all_null_event_fails_event_count_zero_timeout_nonzero,
+  test_with_valid_poller)
+TEST_CASE_FUNC_PARAM (
+  call_poller_wait_all_null_event_fails_event_count_zero_timeout_zero,
+  test_with_valid_poller)
 
 void call_poller_add_twice_fails (void *poller_, void *socket_)
 {
@@ -675,7 +693,12 @@ int main (void)
 
     RUN_TEST (test_call_poller_wait_null_event_fails);
     RUN_TEST (test_call_poller_wait_all_null_event_fails_event_count_nonzero);
-    RUN_TEST (test_call_poller_wait_all_null_event_fails_event_count_zero);
+    RUN_TEST (
+      test_call_poller_wait_all_null_event_fails_event_count_zero_no_timeout);
+    RUN_TEST (
+      test_call_poller_wait_all_null_event_fails_event_count_zero_timeout_nonzero);
+    RUN_TEST (
+      test_call_poller_wait_all_null_event_fails_event_count_zero_timeout_zero);
 
     RUN_TEST (test_call_poller_add_twice_fails);
     RUN_TEST (test_call_poller_remove_unregistered_fails);
