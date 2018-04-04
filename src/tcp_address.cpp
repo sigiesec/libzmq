@@ -300,7 +300,11 @@ int zmq::tcp_address_t::resolve_nic_name (const char *nic_,
     int iterations = 0;
     IP_ADAPTER_ADDRESSES *addresses = NULL;
     IP_ADAPTER_ADDRESSES *current_addresses = NULL;
+#if defined __CYGWIN__
+    ULONG out_buf_len = sizeof (IP_ADAPTER_ADDRESSES);
+#else
     unsigned long out_buf_len = sizeof (IP_ADAPTER_ADDRESSES);
+#endif
 
     do {
         addresses = (IP_ADAPTER_ADDRESSES *) malloc (out_buf_len);

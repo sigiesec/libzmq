@@ -56,7 +56,7 @@ void zmq::thread_t::start (thread_fn *tfn_, void *arg_)
 {
     tfn = tfn_;
     arg = arg_;
-#if defined _WIN32_WCE
+#if defined _WIN32_WCE || defined __CYGWIN__
     descriptor =
       (HANDLE) CreateThread (NULL, 0, &::thread_routine, this, 0, NULL);
 #else

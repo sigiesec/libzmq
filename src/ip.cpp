@@ -73,7 +73,9 @@ zmq::fd_t zmq::open_socket (int domain_, int type_, int protocol_)
     //  Setting this option result in sane behaviour when exec() functions
     //  are used. Old sockets are closed and don't block TCP ports etc.
 #if defined ZMQ_HAVE_SOCK_CLOEXEC
+#if !defined __CYGWIN__
     type_ |= SOCK_CLOEXEC;
+#endif
 #endif
 
     fd_t s = socket (domain_, type_, protocol_);
@@ -109,7 +111,11 @@ zmq::fd_t zmq::open_socket (int domain_, int type_, int protocol_)
 void zmq::unblock_socket (fd_t s_)
 {
 #if defined ZMQ_HAVE_WINDOWS
+#if defined __CYGWIN__
+    __ms_u_long nonblock = 1;
+#else
     u_long nonblock = 1;
+#endif
     int rc = ioctlsocket (s_, FIONBIO, &nonblock);
     wsa_assert (rc != SOCKET_ERROR);
 #elif defined ZMQ_HAVE_OPENVMS || defined ZMQ_HAVE_VXWORKS
@@ -641,9 +647,9 @@ int zmq::make_fdpair (fd_t *r_, fd_t *w_)
         *w_ = *r_ = -1;
         return -1;
     } else {
-    //  If there's no SOCK_CLOEXEC, let's try the second best option. Note that
-    //  race condition can cause socket not to be closed (if fork happens
-    //  between socket creation and this point).
+        //  If there's no SOCK_CLOEXEC, let's try the second best option. Note that
+        //  race condition can cause socket not to be closed (if fork happens
+        //  between socket creation and this point).
 #if !defined ZMQ_HAVE_SOCK_CLOEXEC && defined FD_CLOEXEC
         rc = fcntl (sv[0], F_SETFD, FD_CLOEXEC);
         errno_assert (rc != -1);

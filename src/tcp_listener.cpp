@@ -299,7 +299,7 @@ zmq::fd_t zmq::tcp_listener_t::accept ()
 #else
     socklen_t ss_len = sizeof (ss);
 #endif
-#if defined ZMQ_HAVE_SOCK_CLOEXEC && defined HAVE_ACCEPT4
+#if defined ZMQ_HAVE_SOCK_CLOEXEC && defined HAVE_ACCEPT4 && !defined __CYGWIN__
     fd_t sock = ::accept4 (s, (struct sockaddr *) &ss, &ss_len, SOCK_CLOEXEC);
 #else
     fd_t sock = ::accept (s, (struct sockaddr *) &ss, &ss_len);
