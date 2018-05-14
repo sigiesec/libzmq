@@ -57,5 +57,5 @@ if [ "$DO_CLANG_FORMAT_CHECK" -eq "1" ] ; then
     fi
 else
     export CTEST_OUTPUT_ON_FAILURE=1
-    ( PKG_CONFIG_PATH=${BUILD_PREFIX}/lib/pkgconfig cmake "${CMAKE_OPTS[@]}" .. && make -j5 all VERBOSE=1 && make install && make -j5 test ARGS="-V" ) || exit 1
+    ( PKG_CONFIG_PATH=${BUILD_PREFIX}/lib/pkgconfig cmake "${CMAKE_OPTS[@]}" .. && make -j5 --output-sync all VERBOSE=1 && make install && make -j5 --output-sync test ARGS="-V" ) || exit 1
 fi

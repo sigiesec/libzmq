@@ -67,7 +67,7 @@ if [ $BUILD_TYPE == "default" ]; then
         ./autogen.sh &&
         ./configure "${CONFIG_OPTS[@]}" &&
         export DISTCHECK_CONFIGURE_FLAGS="${CONFIG_OPTS[@]}" &&
-        make VERBOSE=1 -j5 distcheck
+        make VERBOSE=1 -j5 --output-sync distcheck
     ) || exit 1
 else
     cd ./builds/${BUILD_TYPE} && ./ci_build.sh
