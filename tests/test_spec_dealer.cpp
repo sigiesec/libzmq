@@ -191,6 +191,52 @@ void test_block_on_send_no_peers (const char *bind_address_)
     test_context_socket_close (sc);
 }
 
+void test_reconnect (const char *bind_address)
+{
+    void *backend = test_context_socket (ZMQ_DEALER);
+    void *frontend = test_context_socket (ZMQ_DEALER);
+
+    int zero = 0;
+    TEST_ASSERT_SUCCESS_ERRNO (
+      zmq_setsockopt (backend, ZMQ_LINGER, &zero, sizeof (zero)));
+    TEST_ASSERT_SUCCESS_ERRNO (
+      zmq_setsockopt (frontend, ZMQ_LINGER, &zero, sizeof (zero)));
+
+    size_t len = MAX_SOCKET_STRING;
+    char my_endpoint[MAX_SOCKET_STRING];
+    bind_loopback_ipv4 (backend, my_endpoint, len);
+
+    TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (frontend, my_endpoint));
+
+    //  Ping backend to frontend so we know when the connection is up
+    send_string_expect_success (backend, "Hello", 0);
+    recv_string_expect_success (frontend, "Hello", 0);
+
+    // Send message from frontend to backend
+    send_string_expect_success (frontend, "Hello", ZMQ_DONTWAIT);
+
+    test_context_socket_close (backend);
+
+    //  Give time to process disconnect
+    msleep (SETTLE_TIME * 10);
+
+    //  Recreate backend socket
+    backend = test_context_socket (ZMQ_DEALER);
+    TEST_ASSERT_SUCCESS_ERRNO (
+      zmq_setsockopt (backend, ZMQ_LINGER, &zero, sizeof (zero)));
+    TEST_ASSERT_SUCCESS_ERRNO (zmq_bind (backend, my_endpoint));
+
+    //  Ping backend to frontend so we know when the connection is up
+    send_string_expect_success (backend, "Hello", 0);
+    recv_string_expect_success (frontend, "Hello", 0);
+
+    // After the reconnect, should succeed
+    send_string_expect_success (frontend, "Hello", ZMQ_DONTWAIT);
+
+    test_context_socket_close (backend);
+    test_context_socket_close (frontend);
+}
+
 #define TEST_CASES(name, bind_address)                                         \
     void test_round_robin_out_##name ()                                        \
     {                                                                          \
@@ -200,7 +246,8 @@ void test_block_on_send_no_peers (const char *bind_address_)
     void test_block_on_send_no_peers_##name ()                                 \
     {                                                                          \
         test_block_on_send_no_peers (bind_address);                            \
-    }
+    }                                                                          \
+    void test_reconnect_##name () { test_reconnect (bind_address); }
 
 TEST_CASES (inproc, "inproc://a")
 TEST_CASES (tcp, "tcp://127.0.0.1:*")
@@ -214,10 +261,12 @@ int main (void)
     RUN_TEST (test_round_robin_out_inproc);
     RUN_TEST (test_fair_queue_in_inproc);
     RUN_TEST (test_block_on_send_no_peers_inproc);
+    RUN_TEST (test_reconnect_inproc);
 
     RUN_TEST (test_round_robin_out_tcp);
     RUN_TEST (test_fair_queue_in_tcp);
     RUN_TEST (test_block_on_send_no_peers_tcp);
+    RUN_TEST (test_reconnect_tcp);
 
     // TODO *** Test disabled until libzmq does this properly ***
     // test_destroy_queue_on_disconnect (ctx);
