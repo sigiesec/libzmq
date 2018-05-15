@@ -71,6 +71,8 @@ class own_t : public object_t
     void register_term_acks (int count_);
     void unregister_term_ack ();
 
+    const options_t &get_options () const;
+
   protected:
     //  Launch the supplied object and become its owner.
     void launch_child (own_t *object_);

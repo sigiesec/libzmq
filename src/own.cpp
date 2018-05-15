@@ -184,6 +184,11 @@ void zmq::own_t::unregister_term_ack ()
     check_term_acks ();
 }
 
+const zmq::options_t &zmq::own_t::get_options () const
+{
+    return options;
+}
+
 void zmq::own_t::process_term_ack ()
 {
     unregister_term_ack ();

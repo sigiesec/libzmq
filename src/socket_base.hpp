@@ -277,6 +277,8 @@ class socket_base_t : public own_t,
                       bool subscribe_to_all_ = false,
                       bool locally_initiated_ = false);
 
+    void print_command (const command_t &cmd);
+
     //  Processes commands sent to this socket (if any). If timeout is -1,
     //  returns only after at least one command was processed.
     //  If throttle argument is true, commands are processed at most once

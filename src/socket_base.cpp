@@ -403,6 +403,32 @@ void zmq::socket_base_t::attach_pipe (pipe_t *pipe_,
     }
 }
 
+void zmq::socket_base_t::print_command (const command_t &cmd)
+{
+    static std::map<command_t::type_t, std::string> command_names = {
+      {command_t::stop, "stop"},
+      {command_t::plug, "plug"},
+      {command_t::own, "own"},
+      {command_t::attach, "attach"},
+      {command_t::bind, "bind"},
+      {command_t::activate_read, "activate_read"},
+      {command_t::activate_write, "activate_write"},
+      {command_t::hiccup, "hiccup"},
+      {command_t::pipe_term, "pipe_term"},
+      {command_t::pipe_term_ack, "pipe_term_ack"},
+      {command_t::pipe_hwm, "pipe_hwm"},
+      {command_t::term_req, "term_req"},
+      {command_t::term, "term"},
+      {command_t::term_ack, "term_ack"},
+      {command_t::term_endpoint, "term_endpoint"},
+      {command_t::reap, "reap"},
+      {command_t::reaped, "reaped"},
+      {command_t::inproc_connected, "inproc_connected"},
+      {command_t::done, "done"}};
+    printf ("socket %i: %s\n", options.socket_id,
+            command_names[cmd.type].c_str ());
+}
+
 int zmq::socket_base_t::setsockopt (int option_,
                                     const void *optval_,
                                     size_t optvallen_)
@@ -1427,6 +1453,7 @@ int zmq::socket_base_t::process_commands (int timeout_, bool throttle_)
 
     //  Process all available commands.
     while (rc == 0) {
+        print_command (cmd);
         cmd.destination->process_command (cmd);
         rc = _mailbox->recv (&cmd, 0);
     }

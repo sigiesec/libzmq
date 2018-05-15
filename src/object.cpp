@@ -39,13 +39,41 @@
 #include "session_base.hpp"
 #include "socket_base.hpp"
 
+static void print_command (const zmq::command_t &cmd)
+{
+    static std::map<zmq::command_t::type_t, std::string> command_names = {
+      {zmq::command_t::stop, "stop"},
+      {zmq::command_t::plug, "plug"},
+      {zmq::command_t::own, "own"},
+      {zmq::command_t::attach, "attach"},
+      {zmq::command_t::bind, "bind"},
+      {zmq::command_t::activate_read, "activate_read"},
+      {zmq::command_t::activate_write, "activate_write"},
+      {zmq::command_t::hiccup, "hiccup"},
+      {zmq::command_t::pipe_term, "pipe_term"},
+      {zmq::command_t::pipe_term_ack, "pipe_term_ack"},
+      {zmq::command_t::pipe_hwm, "pipe_hwm"},
+      {zmq::command_t::term_req, "term_req"},
+      {zmq::command_t::term, "term"},
+      {zmq::command_t::term_ack, "term_ack"},
+      {zmq::command_t::term_endpoint, "term_endpoint"},
+      {zmq::command_t::reap, "reap"},
+      {zmq::command_t::reaped, "reaped"},
+      {zmq::command_t::inproc_connected, "inproc_connected"},
+      {zmq::command_t::done, "done"}};
+
+    zmq::own_t *own = dynamic_cast<zmq::own_t *> (cmd.destination);
+
+    printf ("socket %i: %s\n", own ? own->get_options ().socket_id : -1,
+            command_names[cmd.type].c_str ());
+}
+
 zmq::object_t::object_t (ctx_t *ctx_, uint32_t tid_) : _ctx (ctx_), _tid (tid_)
 {
 }
 
 zmq::object_t::object_t (object_t *parent_) :
-    _ctx (parent_->_ctx),
-    _tid (parent_->_tid)
+    _ctx (parent_->_ctx), _tid (parent_->_tid)
 {
 }
 
@@ -70,6 +98,8 @@ zmq::ctx_t *zmq::object_t::get_ctx ()
 
 void zmq::object_t::process_command (command_t &cmd_)
 {
+    print_command (cmd_);
+
     switch (cmd_.type) {
         case command_t::activate_read:
             process_activate_read ();
