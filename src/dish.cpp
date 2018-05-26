@@ -255,50 +255,41 @@ zmq::dish_session_t::~dish_session_t ()
 
 int zmq::dish_session_t::push_msg (msg_t *msg_)
 {
-    if (_state == group) {
-        if ((msg_->flags () & msg_t::more) != msg_t::more) {
-            errno = EFAULT;
-            return -1;
-        }
-
+    int rc;
+    if ((msg_->flags () & msg_t::more) == msg_t::more) {
+        //  Thread safe socket doesn't support multipart messages
+        errno = EFAULT;
+        rc = -1;
+    } else if (_state == group) {
         if (msg_->size () > ZMQ_GROUP_MAX_LENGTH) {
             errno = EFAULT;
-            return -1;
+            rc = -1;
+        } else {
+            _group_msg = *msg_;
+            _state = body;
+
+            rc = msg_->init ();
+            errno_assert (rc == 0);
+        }
+    } else {
+        const char *const group_setting = msg_->group ();
+        if (group_setting[0] == 0) {
+            //  Set the message group
+            rc = msg_->set_group (static_cast<char *> (_group_msg.data ()),
+                                  _group_msg.size ());
+            errno_assert (rc == 0);
+
+            //  We set the group, so we don't need the group_msg anymore
+            rc = _group_msg.close ();
+            errno_assert (rc == 0);
         }
 
-        _group_msg = *msg_;
-        _state = body;
+        //  Push message to dish socket
+        rc = session_base_t::push_msg (msg_);
 
-        int rc = msg_->init ();
-        errno_assert (rc == 0);
-        return 0;
+        if (rc == 0)
+            _state = group;
     }
-    const char *group_setting = msg_->group ();
-    int rc;
-    if (group_setting[0] != 0)
-        goto has_group;
-
-    //  Set the message group
-    rc = msg_->set_group (static_cast<char *> (_group_msg.data ()),
-                          _group_msg.size ());
-    errno_assert (rc == 0);
-
-    //  We set the group, so we don't need the group_msg anymore
-    rc = _group_msg.close ();
-    errno_assert (rc == 0);
-has_group:
-    //  Thread safe socket doesn't support multipart messages
-    if ((msg_->flags () & msg_t::more) == msg_t::more) {
-        errno = EFAULT;
-        return -1;
-    }
-
-    //  Push message to dish socket
-    rc = session_base_t::push_msg (msg_);
-
-    if (rc == 0)
-        _state = group;
-
     return rc;
 }
 
