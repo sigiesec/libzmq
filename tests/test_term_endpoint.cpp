@@ -40,7 +40,7 @@ int main (void)
     char buf[BUF_SIZE];
     size_t buf_size;
     const char *ep_wc_tcp = "tcp://127.0.0.1:*";
-#if !defined ZMQ_HAVE_WINDOWS && !defined ZMQ_HAVE_OPENVMS
+#if defined ZMQ_HAVE_IPC
     const char *ep_wc_ipc = "ipc://*";
 #endif
 #if defined ZMQ_HAVE_VMCI
@@ -142,7 +142,7 @@ int main (void)
     assert (rc == 0);
     pull = zmq_socket (ctx, ZMQ_PULL);
     assert (pull);
-#if !defined ZMQ_HAVE_WINDOWS && !defined ZMQ_HAVE_OPENVMS
+#if defined ZMQ_HAVE_IPC
     rc = zmq_bind (pull, ep_wc_ipc);
     assert (rc == 0);
 #endif
@@ -159,7 +159,7 @@ int main (void)
     assert (rc == 0);
     rc = zmq_unbind (push, buf);
     assert (rc == 0);
-#if !defined ZMQ_HAVE_WINDOWS && !defined ZMQ_HAVE_OPENVMS
+#if defined ZMQ_HAVE_IPC
     buf_size = sizeof (buf);
     rc = zmq_getsockopt (pull, ZMQ_LAST_ENDPOINT, buf, &buf_size);
     assert (rc == 0);
@@ -191,7 +191,7 @@ int main (void)
     assert (rc == 0);
     pull = zmq_socket (ctx, ZMQ_PULL);
     assert (pull);
-#if !defined ZMQ_HAVE_WINDOWS && !defined ZMQ_HAVE_OPENVMS
+#if defined ZMQ_HAVE_IPC
     rc = zmq_bind (pull, ep_wc_ipc);
     assert (rc == 0);
 #endif
@@ -205,7 +205,7 @@ int main (void)
     // Sockets binded by wild-card address can't be unbinded by wild-card address
     rc = zmq_unbind (push, ep_wc_tcp);
     assert (rc == -1 && zmq_errno () == ENOENT);
-#if !defined ZMQ_HAVE_WINDOWS && !defined ZMQ_HAVE_OPENVMS
+#if defined ZMQ_HAVE_IPC
     rc = zmq_unbind (pull, ep_wc_ipc);
     assert (rc == -1 && zmq_errno () == ENOENT);
 #endif

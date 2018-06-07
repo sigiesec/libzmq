@@ -53,6 +53,13 @@ set (pkg_config_libs_private "")
 option (WITH_OPENPGM "Build with support for OpenPGM" OFF)
 option (WITH_VMCI "Build with support for VMware VMCI socket" OFF)
 
+# TODO alternatively, perform an actual check if IPC is working?
+if (MSVC || CYGWIN || "$CMAKE_SYSTEM_NAME" == "OpenVMS")
+	option (WITH_IPC "Build with support for IPC" OFF)
+else()
+	option (WITH_IPC "Build with support for IPC" ON)
+endif()
+
 if (APPLE)
     option (ZMQ_BUILD_FRAMEWORK "Build as OS X framework" OFF)
 endif ()
@@ -864,6 +871,10 @@ if (WITH_VMCI)
     include_directories (${VMCI_INCLUDE_DIRS})
     list (APPEND cxx-sources vmci_address.cpp vmci_connecter.cpp vmci_listener.cpp vmci.cpp)
 endif (WITH_VMCI)
+
+if (WITH_VMCI)
+    add_definitions (-DZMQ_HAVE_IPC)
+endif()
 
 if (ZMQ_HAVE_TIPC)
     add_definitions (-DZMQ_HAVE_TIPC)

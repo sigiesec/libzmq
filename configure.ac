@@ -509,6 +509,17 @@ AM_CONDITIONAL(HAVE_CURVE, test "x$curve_library" != "x")
 
 AM_CONDITIONAL(USE_WEPOLL, test "$poller" = "wepoll")
 
+# build with ipc
+
+AC_ARG_WITH([ipc], [AS_HELP_STRING([--with-ipc],
+    [build libzmq with IPC protocol support [default=yes]])],
+    [with_ipc_ext=$withval],
+    [with_ipc=yes])
+
+if test "x$with_ipc" = "xyes"; then
+    AC_DEFINE(ZMQ_HAVE_IPC, [1], [Enable IPC protocol support])
+fi
+
 # build using pgm
 have_pgm_library="no"
 
