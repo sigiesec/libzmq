@@ -644,9 +644,12 @@ int main (void)
 
     zmq::random_open ();
 
+#ifdef _WIN32
+	WSADATA info;
+	WSAStartup(MAKEWORD(2, 0), &info);
+#endif
+
     setup_testutil_security_curve ();
-
-
     setup_test_environment ();
 
     UNITY_BEGIN ();
