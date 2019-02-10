@@ -60,6 +60,14 @@ class socket_base_t : public own_t,
                       public i_poll_events,
                       public i_pipe_events
 {
+  private:
+    socket_base_t (const socket_base_t &);
+    const socket_base_t &operator= (const socket_base_t &);
+};
+
+template <typename Mailbox = mailbox_t>
+class xsocket_base_t : public socket_base_t
+{
     friend class reaper_t;
 
   public:
@@ -158,11 +166,11 @@ class socket_base_t : public own_t,
                                 size_t routing_id_size_) const;
 
   protected:
-    socket_base_t (zmq::ctx_t *parent_,
-                   uint32_t tid_,
-                   int sid_,
-                   bool thread_safe_ = false);
-    virtual ~socket_base_t ();
+    xsocket_base_t (zmq::ctx_t *parent_,
+                    uint32_t tid_,
+                    int sid_,
+                    bool thread_safe_ = false);
+    virtual ~xsocket_base_t ();
 
     //  Concrete algorithms for the x- methods are to be defined by
     //  individual socket types.
@@ -285,7 +293,7 @@ class socket_base_t : public own_t,
                                   const char *tcp_address_);
 
     //  Socket's mailbox object.
-    i_mailbox *_mailbox;
+    Mailbox *_mailbox;
 
     //  List of attached pipes.
     typedef array_t<pipe_t, 3> pipes_t;
@@ -322,17 +330,12 @@ class socket_base_t : public own_t,
     // Signaler to be used in the reaping stage
     signaler_t *_reaper_signaler;
 
-    // Mutex for synchronize access to the socket in thread safe mode
-    mutex_t _sync;
-
     // Mutex to synchronize access to the monitor Pair socket
     mutex_t _monitor_sync;
-
-    socket_base_t (const socket_base_t &);
-    const socket_base_t &operator= (const socket_base_t &);
 };
 
-class routing_socket_base_t : public socket_base_t
+template <typename Mailbox = mailbox_t>
+class routing_socket_base_t : public xsocket_base_t<Mailbox>
 {
   protected:
     routing_socket_base_t (class ctx_t *parent_, uint32_t tid_, int sid_);
@@ -362,7 +365,7 @@ class routing_socket_base_t : public socket_base_t
     template <typename Func> bool any_of_out_pipes (Func func_)
     {
         bool res = false;
-        for (out_pipes_t::iterator it = _out_pipes.begin ();
+        for (typename out_pipes_t::iterator it = _out_pipes.begin ();
              it != _out_pipes.end () && !res; ++it) {
             res |= func_ (*it->second.pipe);
         }

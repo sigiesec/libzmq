@@ -50,7 +50,7 @@ class mailbox_t : public i_mailbox
 
     fd_t get_fd () const;
     void send (const command_t &cmd_);
-    int recv (command_t *cmd_, int timeout_);
+    int recv (cv_scoped_lock_t *lock_, command_t *cmd_, int timeout_);
 
     bool valid () const;
 

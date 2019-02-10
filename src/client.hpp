@@ -33,6 +33,7 @@
 #include "socket_base.hpp"
 #include "fq.hpp"
 #include "lb.hpp"
+#include "mailbox_safe.hpp"
 
 namespace zmq
 {
@@ -41,7 +42,7 @@ class msg_t;
 class pipe_t;
 class io_thread_t;
 
-class client_t : public socket_base_t
+class client_t : public xsocket_base_t<mailbox_safe_t>
 {
   public:
     client_t (zmq::ctx_t *parent_, uint32_t tid_, int sid_);

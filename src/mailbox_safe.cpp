@@ -34,7 +34,7 @@
 
 #include <algorithm>
 
-zmq::mailbox_safe_t::mailbox_safe_t (mutex_t *sync_) : _sync (sync_)
+zmq::mailbox_safe_t::mailbox_safe_t ()
 {
     //  Get the pipe into passive state. That way, if the users starts by
     //  polling on the associated file descriptor it will get woken up when
@@ -49,8 +49,8 @@ zmq::mailbox_safe_t::~mailbox_safe_t ()
 
     // Work around problem that other threads might still be in our
     // send() method, by waiting on the mutex before disappearing.
-    _sync->lock ();
-    _sync->unlock ();
+    _sync.lock ();
+    _sync.unlock ();
 }
 
 void zmq::mailbox_safe_t::add_signaler (signaler_t *signaler_)
@@ -76,12 +76,12 @@ void zmq::mailbox_safe_t::clear_signalers ()
 
 void zmq::mailbox_safe_t::send (const command_t &cmd_)
 {
-    _sync->lock ();
+    cv_scoped_lock_t lock (_sync);
     _cpipe.write (cmd_, false);
     const bool ok = _cpipe.flush ();
 
     if (!ok) {
-        _cond_var.broadcast ();
+        _cond_var.broadcast (lock);
 
         for (std::vector<signaler_t *>::iterator it = _signalers.begin (),
                                                  end = _signalers.end ();
@@ -89,12 +89,14 @@ void zmq::mailbox_safe_t::send (const command_t &cmd_)
             (*it)->send ();
         }
     }
-
-    _sync->unlock ();
 }
 
-int zmq::mailbox_safe_t::recv (command_t *cmd_, int timeout_)
+int zmq::mailbox_safe_t::recv (cv_scoped_lock_t *lock_,
+                               command_t *cmd_,
+                               int timeout_)
 {
+    zmq_assert (lock_ != NULL);
+
     //  Try to get the command straight away.
     if (_cpipe.read (cmd_))
         return 0;
@@ -102,11 +104,11 @@ int zmq::mailbox_safe_t::recv (command_t *cmd_, int timeout_)
     //  If the timeout is zero, it will be quicker to release the lock, giving other a chance to send a command
     //  and immediately relock it.
     if (timeout_ == 0) {
-        _sync->unlock ();
-        _sync->lock ();
+        _sync.unlock ();
+        _sync.lock ();
     } else {
         //  Wait for signal from the command sender.
-        int rc = _cond_var.wait (_sync, timeout_);
+        int rc = _cond_var.wait (*lock_, timeout_);
         if (rc == -1) {
             errno_assert (errno == EAGAIN || errno == EINTR);
             return -1;

@@ -158,7 +158,7 @@ class mutex_t
         posix_assert (rc);
     }
 
-    inline pthread_mutex_t *get_mutex () { return &_mutex; }
+    inline pthread_mutex_t *get_pthread_mutex () { return &_mutex; }
 
   private:
     pthread_mutex_t _mutex;
@@ -178,6 +178,10 @@ namespace zmq
 struct scoped_lock_t
 {
     scoped_lock_t (mutex_t &mutex_) : _mutex (mutex_) { _mutex.lock (); }
+
+    void lock () { _mutex.lock (); }
+    void unlock () { _mutex.unlock (); }
+    mutex_t *mutex () { return &_mutex; }
 
     ~scoped_lock_t () { _mutex.unlock (); }
 

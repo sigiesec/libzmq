@@ -47,11 +47,11 @@ namespace zmq
 class mailbox_safe_t : public i_mailbox
 {
   public:
-    mailbox_safe_t (mutex_t *sync_);
+    mailbox_safe_t ();
     ~mailbox_safe_t ();
 
     void send (const command_t &cmd_);
-    int recv (command_t *cmd_, int timeout_);
+    int recv (cv_scoped_lock_t *lock_, command_t *cmd_, int timeout_);
 
     // Add signaler to mailbox which will be called when a message is ready
     void add_signaler (signaler_t *signaler_);
@@ -77,7 +77,7 @@ class mailbox_safe_t : public i_mailbox
     condition_variable_t _cond_var;
 
     //  Synchronize access to the mailbox from receivers and senders
-    mutex_t *const _sync;
+    cv_mutex_t _sync;
 
     std::vector<zmq::signaler_t *> _signalers;
 

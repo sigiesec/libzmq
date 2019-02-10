@@ -31,6 +31,7 @@
 #define __ZMQ_I_MAILBOX_HPP_INCLUDED__
 
 #include "stdint.hpp"
+#include "condition_variable.hpp"
 
 namespace zmq
 {
@@ -42,7 +43,8 @@ class i_mailbox
     virtual ~i_mailbox () {}
 
     virtual void send (const command_t &cmd_) = 0;
-    virtual int recv (command_t *cmd_, int timeout_) = 0;
+    virtual int
+    recv (cv_scoped_lock_t *lock_, command_t *cmd_, int timeout_) = 0;
 
 
 #ifdef HAVE_FORK

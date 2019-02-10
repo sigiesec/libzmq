@@ -81,12 +81,12 @@ void zmq::io_thread_t::in_event ()
     //  process in a single go?
 
     command_t cmd;
-    int rc = _mailbox.recv (&cmd, 0);
+    int rc = _mailbox.recv (NULL, &cmd, 0);
 
     while (rc == 0 || errno == EINTR) {
         if (rc == 0)
             cmd.destination->process_command (cmd);
-        rc = _mailbox.recv (&cmd, 0);
+        rc = _mailbox.recv (NULL, &cmd, 0);
     }
 
     errno_assert (rc != 0 && errno == EAGAIN);

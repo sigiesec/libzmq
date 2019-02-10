@@ -66,8 +66,12 @@ void zmq::mailbox_t::send (const command_t &cmd_)
         _signaler.send ();
 }
 
-int zmq::mailbox_t::recv (command_t *cmd_, int timeout_)
+int zmq::mailbox_t::recv (cv_scoped_lock_t *lock_,
+                          command_t *cmd_,
+                          int timeout_)
 {
+    zmq_assert (lock_ == NULL);
+
     //  Try to get the command straight away.
     if (_active) {
         if (_cpipe.read (cmd_))
