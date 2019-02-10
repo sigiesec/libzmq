@@ -211,7 +211,7 @@ zmq::socket_base_t *zmq::socket_base_t::create (int type_,
 
     alloc_assert (s);
 
-    if (s->_mailbox == NULL) {
+    if (s->get_mailbox () == NULL) {
         s->_destroyed = true;
         LIBZMQ_DELETE (s);
         return NULL;
@@ -222,12 +222,21 @@ zmq::socket_base_t *zmq::socket_base_t::create (int type_,
 
 zmq::socket_base_t::socket_base_t (ctx_t *parent_,
                                    uint32_t tid_,
-                                   int sid_,
                                    bool thread_safe_) :
     own_t (parent_, tid_),
     _tag (0xbaddecaf),
     _ctx_terminated (false),
     _destroyed (false),
+    _thread_safe (thread_safe_)
+{
+}
+
+template <typename Mailbox>
+zmq::xsocket_base_t<Mailbox>::xsocket_base_t (ctx_t *parent_,
+                                              uint32_t tid_,
+                                              int sid_,
+                                              bool thread_safe_) :
+    socket_base_t (parent_, tid_, thread_safe_),
     _poller (NULL),
     _handle (static_cast<poller_t::handle_t> (NULL)),
     _last_tsc (0),
@@ -235,7 +244,6 @@ zmq::socket_base_t::socket_base_t (ctx_t *parent_,
     _rcvmore (false),
     _monitor_socket (NULL),
     _monitor_events (0),
-    _thread_safe (thread_safe_),
     _reaper_signaler (NULL),
     _monitor_sync ()
 {
@@ -247,12 +255,9 @@ zmq::socket_base_t::socket_base_t (ctx_t *parent_,
     _mailbox = new (std::nothrow) Mailbox ();
     zmq_assert (_mailbox);
 
-    if (!_thread_safe) {
-        if (m->get_fd () != retired_fd)
-            _mailbox = m;
-        else {
-            LIBZMQ_DELETE (m);
-            _mailbox = NULL;
+    if (!is_thread_safe ()) {
+        if (_mailbox->get_fd () == retired_fd) {
+            LIBZMQ_DELETE (_mailbox);
         }
     }
 }
@@ -268,7 +273,7 @@ int zmq::socket_base_t::get_peer_state (const void *routing_id_,
     return -1;
 }
 
-zmq::socket_base_t::~socket_base_t ()
+template <typename Mailbox> zmq::xsocket_base_t<Mailbox>::~xsocket_base_t ()
 {
     if (_mailbox)
         LIBZMQ_DELETE (_mailbox);
@@ -282,7 +287,8 @@ zmq::socket_base_t::~socket_base_t ()
     zmq_assert (_destroyed);
 }
 
-zmq::i_mailbox *zmq::socket_base_t::get_mailbox () const
+template <typename Mailbox>
+zmq::i_mailbox *zmq::xsocket_base_t<Mailbox>::get_mailbox () const
 {
     return _mailbox;
 }
@@ -372,9 +378,10 @@ int zmq::socket_base_t::check_protocol (const std::string &protocol_) const
     return 0;
 }
 
-void zmq::socket_base_t::attach_pipe (pipe_t *pipe_,
-                                      bool subscribe_to_all_,
-                                      bool locally_initiated_)
+template <typename Mailbox>
+void zmq::xsocket_base_t<Mailbox>::attach_pipe (pipe_t *pipe_,
+                                                bool subscribe_to_all_,
+                                                bool locally_initiated_)
 {
     //  First, register the pipe so that we can terminate it later on.
     pipe_->set_event_sink (this);
@@ -391,11 +398,14 @@ void zmq::socket_base_t::attach_pipe (pipe_t *pipe_,
     }
 }
 
-int zmq::socket_base_t::setsockopt (int option_,
-                                    const void *optval_,
-                                    size_t optvallen_)
+template <typename Mailbox>
+int zmq::xsocket_base_t<Mailbox>::setsockopt (int option_,
+                                              const void *optval_,
+                                              size_t optvallen_)
 {
-    scoped_optional_lock_t sync_lock (_thread_safe ? &_sync : NULL);
+    scoped_optional_lock_t sync_lock (
+      is_thread_safe () ? static_cast<mailbox_safe_t *> (_mailbox)->get_mutex ()
+                        : NULL);
 
     if (unlikely (_ctx_terminated)) {
         errno = ETERM;
@@ -416,12 +426,14 @@ int zmq::socket_base_t::setsockopt (int option_,
     return rc;
 }
 
-int zmq::socket_base_t::getsockopt (int option_,
-                                    void *optval_,
-                                    size_t *optvallen_)
+template <typename Mailbox>
+int zmq::xsocket_base_t<Mailbox>::getsockopt (int option_,
+                                              void *optval_,
+                                              size_t *optvallen_)
 {
-    scoped_optional_lock_t sync_lock (_thread_safe ? &_sync : NULL);
-
+    scoped_optional_lock_t sync_lock (
+      is_thread_safe () ? static_cast<mailbox_safe_t *> (_mailbox)->get_mutex ()
+                        : NULL);
     if (unlikely (_ctx_terminated)) {
         errno = ETERM;
         return -1;
@@ -432,7 +444,7 @@ int zmq::socket_base_t::getsockopt (int option_,
     }
 
     if (option_ == ZMQ_FD) {
-        if (_thread_safe) {
+        if (is_thread_safe ()) {
             // thread safe socket doesn't provide file descriptor
             errno = EINVAL;
             return -1;
@@ -460,46 +472,58 @@ int zmq::socket_base_t::getsockopt (int option_,
     }
 
     if (option_ == ZMQ_THREAD_SAFE) {
-        return do_getsockopt<int> (optval_, optvallen_, _thread_safe ? 1 : 0);
+        return do_getsockopt<int> (optval_, optvallen_,
+                                   is_thread_safe () ? 1 : 0);
     }
 
     return options.getsockopt (option_, optval_, optvallen_);
 }
 
-int zmq::socket_base_t::join (const char *group_)
+template <typename Mailbox>
+int zmq::xsocket_base_t<Mailbox>::join (const char *group_)
 {
-    scoped_optional_lock_t sync_lock (_thread_safe ? &_sync : NULL);
-
+    scoped_optional_lock_t sync_lock (
+      is_thread_safe () ? static_cast<mailbox_safe_t *> (_mailbox)->get_mutex ()
+                        : NULL);
     return xjoin (group_);
 }
 
-int zmq::socket_base_t::leave (const char *group_)
+template <typename Mailbox>
+int zmq::xsocket_base_t<Mailbox>::leave (const char *group_)
 {
-    scoped_optional_lock_t sync_lock (_thread_safe ? &_sync : NULL);
-
+    scoped_optional_lock_t sync_lock (
+      is_thread_safe () ? static_cast<mailbox_safe_t *> (_mailbox)->get_mutex ()
+                        : NULL);
     return xleave (group_);
 }
 
-void zmq::socket_base_t::add_signaler (signaler_t *s_)
+template <typename Mailbox>
+void zmq::xsocket_base_t<Mailbox>::add_signaler (signaler_t *s_)
 {
-    zmq_assert (_thread_safe);
+    zmq_assert (is_thread_safe ());
 
-    scoped_lock_t sync_lock (_sync);
+    scoped_lock_t sync_lock (
+      *static_cast<mailbox_safe_t *> (_mailbox)->get_mutex ());
+
     (static_cast<mailbox_safe_t *> (_mailbox))->add_signaler (s_);
 }
 
-void zmq::socket_base_t::remove_signaler (signaler_t *s_)
+template <typename Mailbox>
+void zmq::xsocket_base_t<Mailbox>::remove_signaler (signaler_t *s_)
 {
-    zmq_assert (_thread_safe);
+    zmq_assert (is_thread_safe ());
 
-    scoped_lock_t sync_lock (_sync);
+    scoped_lock_t sync_lock (
+      *static_cast<mailbox_safe_t *> (_mailbox)->get_mutex ());
     (static_cast<mailbox_safe_t *> (_mailbox))->remove_signaler (s_);
 }
 
-int zmq::socket_base_t::bind (const char *endpoint_uri_)
+template <typename Mailbox>
+int zmq::xsocket_base_t<Mailbox>::bind (const char *endpoint_uri_)
 {
-    scoped_optional_lock_t sync_lock (_thread_safe ? &_sync : NULL);
-
+    scoped_optional_lock_t sync_lock (
+      is_thread_safe () ? static_cast<mailbox_safe_t *> (_mailbox)->get_mutex ()
+                        : NULL);
     if (unlikely (_ctx_terminated)) {
         errno = ETERM;
         return -1;
@@ -696,9 +720,12 @@ int zmq::socket_base_t::bind (const char *endpoint_uri_)
     return -1;
 }
 
-int zmq::socket_base_t::connect (const char *endpoint_uri_)
+template <typename Mailbox>
+int zmq::xsocket_base_t<Mailbox>::connect (const char *endpoint_uri_)
 {
-    scoped_optional_lock_t sync_lock (_thread_safe ? &_sync : NULL);
+    scoped_optional_lock_t sync_lock (
+      is_thread_safe () ? static_cast<mailbox_safe_t *> (_mailbox)->get_mutex ()
+                        : NULL);
 
     if (unlikely (_ctx_terminated)) {
         errno = ETERM;
@@ -1020,9 +1047,12 @@ void zmq::socket_base_t::add_endpoint (
         pipe_->set_endpoint_pair (endpoint_pair_);
 }
 
-int zmq::socket_base_t::term_endpoint (const char *endpoint_uri_)
+template <typename Mailbox>
+int zmq::xsocket_base_t<Mailbox>::term_endpoint (const char *endpoint_uri_)
 {
-    scoped_optional_lock_t sync_lock (_thread_safe ? &_sync : NULL);
+    scoped_optional_lock_t sync_lock (
+      is_thread_safe () ? static_cast<mailbox_safe_t *> (_mailbox)->get_mutex ()
+                        : NULL);
 
     //  Check whether the context hasn't been shut down yet.
     if (unlikely (_ctx_terminated)) {
@@ -1083,9 +1113,12 @@ int zmq::socket_base_t::term_endpoint (const char *endpoint_uri_)
     return 0;
 }
 
-int zmq::socket_base_t::send (msg_t *msg_, int flags_)
+template <typename Mailbox>
+int zmq::xsocket_base_t<Mailbox>::send (msg_t *msg_, int flags_)
 {
-    scoped_optional_lock_t sync_lock (_thread_safe ? &_sync : NULL);
+    scoped_optional_lock_t sync_lock (
+      is_thread_safe () ? static_cast<mailbox_safe_t *> (_mailbox)->get_mutex ()
+                        : NULL);
 
     //  Check whether the context hasn't been shut down yet.
     if (unlikely (_ctx_terminated)) {
@@ -1171,9 +1204,12 @@ int zmq::socket_base_t::send (msg_t *msg_, int flags_)
     return 0;
 }
 
-int zmq::socket_base_t::recv (msg_t *msg_, int flags_)
+template <typename Mailbox>
+int zmq::xsocket_base_t<Mailbox>::recv (msg_t *msg_, int flags_)
 {
-    scoped_optional_lock_t sync_lock (_thread_safe ? &_sync : NULL);
+    scoped_optional_lock_t sync_lock (
+      is_thread_safe () ? static_cast<mailbox_safe_t *> (_mailbox)->get_mutex ()
+                        : NULL);
 
     //  Check whether the context hasn't been shut down yet.
     if (unlikely (_ctx_terminated)) {
@@ -1267,12 +1303,14 @@ int zmq::socket_base_t::recv (msg_t *msg_, int flags_)
     return 0;
 }
 
-int zmq::socket_base_t::close ()
+template <typename Mailbox> int zmq::xsocket_base_t<Mailbox>::close ()
 {
-    scoped_optional_lock_t sync_lock (_thread_safe ? &_sync : NULL);
+    scoped_optional_lock_t sync_lock (
+      is_thread_safe () ? static_cast<mailbox_safe_t *> (_mailbox)->get_mutex ()
+                        : NULL);
 
     //  Remove all existing signalers for thread safe sockets
-    if (_thread_safe)
+    if (is_thread_safe ())
         (static_cast<mailbox_safe_t *> (_mailbox))->clear_signalers ();
 
     //  Mark the socket as dead

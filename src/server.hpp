@@ -37,6 +37,7 @@
 #include "stdint.hpp"
 #include "blob.hpp"
 #include "fq.hpp"
+#include "mailbox_safe.hpp"
 
 namespace zmq
 {
@@ -45,7 +46,7 @@ class msg_t;
 class pipe_t;
 
 //  TODO: This class uses O(n) scheduling. Rewrite it to use O(1) algorithm.
-class server_t : public socket_base_t
+class server_t : public xsocket_base_t<mailbox_safe_t>
 {
   public:
     server_t (zmq::ctx_t *parent_, uint32_t tid_, int sid_);

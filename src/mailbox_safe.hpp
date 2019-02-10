@@ -50,6 +50,8 @@ class mailbox_safe_t : public i_mailbox
     mailbox_safe_t ();
     ~mailbox_safe_t ();
 
+    mutex_t *get_mutex () const;
+
     void send (const command_t &cmd_);
     int recv (cv_scoped_lock_t *lock_, command_t *cmd_, int timeout_);
 

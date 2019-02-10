@@ -38,6 +38,7 @@
 #include "session_base.hpp"
 #include "dist.hpp"
 #include "msg.hpp"
+#include "mailbox_safe.hpp"
 
 namespace zmq
 {
@@ -45,7 +46,7 @@ class ctx_t;
 class pipe_t;
 class io_thread_t;
 
-class radio_t : public socket_base_t
+class radio_t : public xsocket_base_t<mailbox_safe_t>
 {
   public:
     radio_t (zmq::ctx_t *parent_, uint32_t tid_, int sid_);

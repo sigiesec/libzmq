@@ -60,7 +60,126 @@ class socket_base_t : public own_t,
                       public i_poll_events,
                       public i_pipe_events
 {
+  public:
+    //  Returns false if object is not a socket.
+    bool check_tag () const;
+
+    virtual int bind (const char *endpoint_uri_) = 0;
+    virtual int close () = 0;
+    virtual i_mailbox *get_mailbox () const = 0;
+    virtual int send (zmq::msg_t *msg_, int flags_) = 0;
+    virtual int recv (zmq::msg_t *msg_, int flags_) = 0;
+    virtual int
+    setsockopt (int option_, const void *optval_, size_t optvallen_) = 0;
+    virtual int getsockopt (int option_, void *optval_, size_t *optvallen_) = 0;
+    virtual void start_reaping (poller_t *poller_) = 0;
+
+    // TODO consider pulling these up
+    virtual void stop () = 0;
+    virtual void event_connected (const endpoint_uri_pair_t &endpoint_uri_pair_,
+                                  zmq::fd_t fd_) = 0;
+    virtual void
+    event_connect_delayed (const endpoint_uri_pair_t &endpoint_uri_pair_,
+                           int err_) = 0;
+    virtual void
+    event_connect_retried (const endpoint_uri_pair_t &endpoint_uri_pair_,
+                           int interval_) = 0;
+    virtual void event_listening (const endpoint_uri_pair_t &endpoint_uri_pair_,
+                                  zmq::fd_t fd_) = 0;
+    virtual void
+    event_bind_failed (const endpoint_uri_pair_t &endpoint_uri_pair_,
+                       int err_) = 0;
+    virtual void event_accepted (const endpoint_uri_pair_t &endpoint_uri_pair_,
+                                 zmq::fd_t fd_) = 0;
+    virtual void
+    event_accept_failed (const endpoint_uri_pair_t &endpoint_uri_pair_,
+                         int err_) = 0;
+    virtual void event_closed (const endpoint_uri_pair_t &endpoint_uri_pair_,
+                               zmq::fd_t fd_) = 0;
+    virtual void
+    event_close_failed (const endpoint_uri_pair_t &endpoint_uri_pair_,
+                        int err_) = 0;
+    virtual void
+    event_disconnected (const endpoint_uri_pair_t &endpoint_uri_pair_,
+                        zmq::fd_t fd_) = 0;
+    virtual void event_handshake_failed_protocol (
+      const endpoint_uri_pair_t &endpoint_uri_pair_, int err_) = 0;
+    virtual void event_handshake_failed_no_detail (
+      const endpoint_uri_pair_t &endpoint_uri_pair_, int err_) = 0;
+    virtual void
+    event_handshake_failed_auth (const endpoint_uri_pair_t &endpoint_uri_pair_,
+                                 int err_) = 0;
+    virtual void
+    event_handshake_succeeded (const endpoint_uri_pair_t &endpoint_uri_pair_,
+                               int err_) = 0;
+
+    //  Query the state of a specific peer. The default implementation
+    //  always returns an ENOTSUP error.
+    virtual int get_peer_state (const void *routing_id_,
+                                size_t routing_id_size_) const;
+
+    //  Create a socket of a specified type.
+    static socket_base_t *
+    create (int type_, zmq::ctx_t *parent_, uint32_t tid_, int sid_);
+
+  protected:
+    socket_base_t (ctx_t *parent_, uint32_t tid_, bool thread_safe_);
+
+    //  Returns whether the socket is thread-safe.
+    bool is_thread_safe () const;
+
+    //  Parse URI string.
+    static int
+    parse_uri (const char *uri_, std::string &protocol_, std::string &path_);
+
+    //  Check whether transport protocol, as specified in connect or
+    //  bind, is available and compatible with the socket type.
+    int check_protocol (const std::string &protocol_) const;
+
+    //  Map of open inproc endpoints.
+    class inprocs_t
+    {
+      public:
+        void emplace (const char *endpoint_uri_, pipe_t *pipe_);
+        int erase_pipes (const std::string &endpoint_uri_str_);
+        void erase_pipe (pipe_t *pipe_);
+
+      private:
+        typedef std::multimap<std::string, pipe_t *> map_t;
+        map_t _inprocs;
+    };
+    inprocs_t _inprocs;
+
+    //  Map of open endpoints.
+    typedef std::pair<own_t *, pipe_t *> endpoint_pipe_t;
+    typedef std::multimap<std::string, endpoint_pipe_t> endpoints_t;
+    endpoints_t _endpoints;
+
+    //  Creates new endpoint ID and adds the endpoint to the map.
+    void add_endpoint (const endpoint_uri_pair_t &endpoint_pair_,
+                       own_t *endpoint_,
+                       pipe_t *pipe_);
+
+    std::string resolve_tcp_addr (std::string endpoint_uri_,
+                                  const char *tcp_address_);
+
   private:
+    //  Used to check whether the object is a socket.
+    uint32_t _tag;
+
+  protected:
+    //  If true, associated context was already terminated.
+    bool _ctx_terminated;
+
+    //  If true, object should have been already destroyed. However,
+    //  destruction is delayed while we unwind the stack to the point
+    //  where it doesn't intersect the object being destroyed.
+    bool _destroyed;
+
+  private:
+    // Indicate if the socket is thread safe
+    const bool _thread_safe;
+
     socket_base_t (const socket_base_t &);
     const socket_base_t &operator= (const socket_base_t &);
 };
@@ -71,16 +190,6 @@ class xsocket_base_t : public socket_base_t
     friend class reaper_t;
 
   public:
-    //  Returns false if object is not a socket.
-    bool check_tag () const;
-
-    //  Returns whether the socket is thread-safe.
-    bool is_thread_safe () const;
-
-    //  Create a socket of a specified type.
-    static socket_base_t *
-    create (int type_, zmq::ctx_t *parent_, uint32_t tid_, int sid_);
-
     //  Returns the mailbox associated with this socket.
     i_mailbox *get_mailbox () const;
 
@@ -160,11 +269,6 @@ class xsocket_base_t : public socket_base_t
     event_handshake_succeeded (const endpoint_uri_pair_t &endpoint_uri_pair_,
                                int err_);
 
-    //  Query the state of a specific peer. The default implementation
-    //  always returns an ENOTSUP error.
-    virtual int get_peer_state (const void *routing_id_,
-                                size_t routing_id_size_) const;
-
   protected:
     xsocket_base_t (zmq::ctx_t *parent_,
                     uint32_t tid_,
@@ -219,30 +323,6 @@ class xsocket_base_t : public socket_base_t
     // Monitor socket cleanup
     void stop_monitor (bool send_monitor_stopped_event_ = true);
 
-    //  Creates new endpoint ID and adds the endpoint to the map.
-    void add_endpoint (const endpoint_uri_pair_t &endpoint_pair_,
-                       own_t *endpoint_,
-                       pipe_t *pipe_);
-
-    //  Map of open endpoints.
-    typedef std::pair<own_t *, pipe_t *> endpoint_pipe_t;
-    typedef std::multimap<std::string, endpoint_pipe_t> endpoints_t;
-    endpoints_t _endpoints;
-
-    //  Map of open inproc endpoints.
-    class inprocs_t
-    {
-      public:
-        void emplace (const char *endpoint_uri_, pipe_t *pipe_);
-        int erase_pipes (const std::string &endpoint_uri_str_);
-        void erase_pipe (pipe_t *pipe_);
-
-      private:
-        typedef std::multimap<std::string, pipe_t *> map_t;
-        map_t _inprocs;
-    };
-    inprocs_t _inprocs;
-
     //  To be called after processing commands or invoking any command
     //  handlers explicitly. If required, it will deallocate the socket.
     void check_destroy ();
@@ -250,25 +330,6 @@ class xsocket_base_t : public socket_base_t
     //  Moves the flags from the message to local variables,
     //  to be later retrieved by getsockopt.
     void extract_flags (msg_t *msg_);
-
-    //  Used to check whether the object is a socket.
-    uint32_t _tag;
-
-    //  If true, associated context was already terminated.
-    bool _ctx_terminated;
-
-    //  If true, object should have been already destroyed. However,
-    //  destruction is delayed while we unwind the stack to the point
-    //  where it doesn't intersect the object being destroyed.
-    bool _destroyed;
-
-    //  Parse URI string.
-    static int
-    parse_uri (const char *uri_, std::string &protocol_, std::string &path_);
-
-    //  Check whether transport protocol, as specified in connect or
-    //  bind, is available and compatible with the socket type.
-    int check_protocol (const std::string &protocol_) const;
 
     //  Register the pipe with this socket.
     void attach_pipe (zmq::pipe_t *pipe_,
@@ -288,9 +349,6 @@ class xsocket_base_t : public socket_base_t
     void process_term_endpoint (std::string *endpoint_);
 
     void update_pipe_options (int option_);
-
-    std::string resolve_tcp_addr (std::string endpoint_uri_,
-                                  const char *tcp_address_);
 
     //  Socket's mailbox object.
     Mailbox *_mailbox;
@@ -323,9 +381,6 @@ class xsocket_base_t : public socket_base_t
 
     // Last socket endpoint resolved URI
     std::string _last_endpoint;
-
-    // Indicate if the socket is thread safe
-    const bool _thread_safe;
 
     // Signaler to be used in the reaping stage
     signaler_t *_reaper_signaler;

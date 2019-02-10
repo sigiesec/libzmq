@@ -46,7 +46,7 @@ class ctx_t;
 class pipe_t;
 class io_thread_t;
 
-class xsub_t : public socket_base_t
+class xsub_t : public xsocket_base_t<>
 {
   public:
     xsub_t (zmq::ctx_t *parent_, uint32_t tid_, int sid_);
