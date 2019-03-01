@@ -36,8 +36,7 @@
 
 #include <limits.h>
 
-zmq::v2_encoder_t::v2_encoder_t (size_t bufsize_) :
-    encoder_base_t<v2_encoder_t> (bufsize_)
+zmq::v2_encoder_t::v2_encoder_t ()
 {
     //  Write 0 bytes to the batch and go to message_ready state.
     next_step (NULL, 0, &v2_encoder_t::message_ready, true);

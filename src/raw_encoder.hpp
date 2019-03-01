@@ -43,7 +43,7 @@ namespace zmq
 class raw_encoder_t : public encoder_base_t<raw_encoder_t>
 {
   public:
-    raw_encoder_t (size_t bufsize_);
+    raw_encoder_t ();
     ~raw_encoder_t ();
 
   private:

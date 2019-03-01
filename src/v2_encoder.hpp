@@ -39,7 +39,7 @@ namespace zmq
 class v2_encoder_t : public encoder_base_t<v2_encoder_t>
 {
   public:
-    v2_encoder_t (size_t bufsize_);
+    v2_encoder_t ();
     virtual ~v2_encoder_t ();
 
   private:

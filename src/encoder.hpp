@@ -54,29 +54,28 @@ namespace zmq
 template <typename T> class encoder_base_t : public i_encoder
 {
   public:
-    inline explicit encoder_base_t (size_t bufsize_) :
+    inline explicit encoder_base_t () :
         _write_pos (0),
         _to_write (0),
         _next (NULL),
-        _new_msg_flag (false),
-        _buf_size (bufsize_),
-        _buf (static_cast<unsigned char *> (malloc (bufsize_))),
-        _in_progress (NULL)
+        _in_progress (NULL),
+        _new_msg_flag (false)
     {
         alloc_assert (_buf);
     }
 
     //  The destructor doesn't have to be virtual. It is made virtual
     //  just to keep ICC and code checking tools from complaining.
-    inline virtual ~encoder_base_t () { free (_buf); }
+    inline virtual ~encoder_base_t () {}
 
     //  The function returns a batch of binary data. The data
     //  are filled to a supplied buffer. If no buffer is supplied (data_
     //  points to NULL) decoder object will provide buffer of its own.
     inline size_t encode (unsigned char **data_, size_t size_)
     {
-        unsigned char *buffer = !*data_ ? _buf : *data_;
-        size_t buffersize = !*data_ ? _buf_size : size_;
+        unsigned char *const buffer = !*data_ ? _buf : *data_;
+        const size_t buffersize =
+          !*data_ ? sizeof (_buf) / sizeof (_buf[0]) : size_;
 
         if (in_progress () == NULL)
             return 0;
@@ -155,6 +154,9 @@ template <typename T> class encoder_base_t : public i_encoder
     msg_t *in_progress () { return _in_progress; }
 
   private:
+    //  The buffer for encoded data.
+    unsigned char _buf[out_batch_size];
+
     //  Where to get the data to write from.
     unsigned char *_write_pos;
 
@@ -165,16 +167,12 @@ template <typename T> class encoder_base_t : public i_encoder
     //  is dead.
     step_t _next;
 
-    bool _new_msg_flag;
+    msg_t *_in_progress;
 
-    //  The buffer for encoded data.
-    const size_t _buf_size;
-    unsigned char *const _buf;
+    bool _new_msg_flag;
 
     encoder_base_t (const encoder_base_t &);
     void operator= (const encoder_base_t &);
-
-    msg_t *_in_progress;
 };
 }
 
