@@ -1162,7 +1162,12 @@ if(ZMQ_BUILD_FRAMEWORK)
 endif()
 
 option(ENABLE_PRECOMPILED "Enable precompiled headers, if possible" ON)
-if(MSVC AND ENABLE_PRECOMPILED)
+# TODO while only Ninja complains about this, this is not a valid approach:
+# the same precompiled header file is built and used by both libzmq and
+# libzmq-static. This might produce conflicts in content, but at least a race
+# condition in creating the precompiled header. Consider using cotire or
+# something similar instead.
+if(ENABLE_PRECOMPILED AND MSVC AND NOT "${CMAKE_GENERATOR}" MATCHES "Ninja")
   # default for all sources is to use precompiled headers
   foreach(source ${sources})
     # C and C++ can not use the same precompiled header
