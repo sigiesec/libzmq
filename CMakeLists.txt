@@ -1174,14 +1174,14 @@ if(ENABLE_PRECOMPILED AND MSVC AND NOT "${CMAKE_GENERATOR}" MATCHES "Ninja")
     if(${source} MATCHES ".cpp$" AND NOT ${source} STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}/src/precompiled.cpp")
       set_source_files_properties(${source}
         PROPERTIES
-        COMPILE_FLAGS "/Yuprecompiled.hpp /F${CMAKE_CURRENT_BINARY_DIR}/pprecompiled.pch"
+        COMPILE_FLAGS "/Yuprecompiled.hpp /F${CMAKE_CURRENT_BINARY_DIR}/precompiled.pch"
         OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/precompiled.pch)
     endif()
   endforeach()
   # create precompiled header
   set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/precompiled.cpp
     PROPERTIES
-    COMPILE_FLAGS "/Ycprecompiled.hpp /F${CMAKE_CURRENT_BINARY_DIR}/pprecompiled.pch"
+    COMPILE_FLAGS "/Ycprecompiled.hpp /F${CMAKE_CURRENT_BINARY_DIR}/precompiled.pch"
     OBJECT_OUTPUTS ${CMAKE_CURRENT_BINARY_DIR}/precompiled.pch)
 endif()
 
