@@ -63,7 +63,7 @@ endforeach()
 #Check whether all tests in the current folder are present
 #TODO duplicated with tests/CMakeLists.txt, define as a function?
 file(READ "${CMAKE_CURRENT_LIST_FILE}" CURRENT_LIST_FILE_CONTENT)
-file(GLOB ALL_TEST_SOURCES "test_*.cpp")
+file(GLOB ALL_TEST_SOURCES "unittest_*.cpp")
 foreach(TEST_SOURCE ${ALL_TEST_SOURCES})
   get_filename_component(TESTNAME "${TEST_SOURCE}" NAME_WE)
   string(REGEX MATCH "${TESTNAME}" MATCH_TESTNAME "${CURRENT_LIST_FILE_CONTENT}")
