@@ -72,6 +72,42 @@ void test_write_complete_and_flush_and_check_read_and_read ()
     TEST_ASSERT_EQUAL_INT (value, read_value);
 }
 
+static void writer_thread (void *const param_)
+{
+    zmq::ypipe_t<int, 16> &ypipe =
+      *static_cast<zmq::ypipe_t<int, 16> *> (param_);
+
+    for (int i = 0; i < 1 << 18; ++i) {
+        ypipe.write (i, false);
+        ypipe.flush ();
+
+        if (i % 4096 == 2048) {
+            msleep (50);
+        }
+    }
+}
+
+void test_concurrent_write_flush_and_read ()
+{
+    zmq::ypipe_t<int, 16> ypipe;
+
+    void *const writer = zmq_threadstart (writer_thread, &ypipe);
+
+    int value;
+    for (int i = 0; i < 1 << 18; ++i) {
+        do {
+        } while (!ypipe.read (&value));
+
+        if (i % 4096 == 0) {
+            msleep (50);
+        }
+
+        TEST_ASSERT_EQUAL_INT (i, value);
+    }
+
+    zmq_threadclose (writer);
+}
+
 int main (void)
 {
     setup_test_environment ();
@@ -82,6 +118,7 @@ int main (void)
     RUN_TEST (test_read_empty);
     RUN_TEST (test_write_complete_and_check_read_and_read);
     RUN_TEST (test_write_complete_and_flush_and_check_read_and_read);
+    RUN_TEST (test_concurrent_write_flush_and_read);
 
     return UNITY_END ();
 }
