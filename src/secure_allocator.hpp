@@ -39,6 +39,7 @@
 #include "sodium.h"
 #endif
 
+#include <climits>
 #include <memory>
 
 namespace zmq
