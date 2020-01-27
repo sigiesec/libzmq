@@ -171,8 +171,6 @@ install:
   - cmd: if "%Platform%"=="cygwin64" set PATH=C:\cygwin64\bin;%PATH%
   - cmd: if "%Platform%"=="mingw64" C:\msys64\usr\bin\bash -lc "pacman -Qg"
   - cmd: if "%Platform%"=="mingw64" set PATH=C:\msys64\usr\bin;%PATH%
-  - cmd: if "%Platform%"=="x64" (if not "%MSVCVERSION%"=="v142" set "CMAKE_GENERATOR=%CMAKE_GENERATOR% Win64")
-  - cmd: echo "Generator='%CMAKE_GENERATOR%'"
   - cmd: echo "Platform='%Platform%'"
 ################### libsodium begin
   - cmd: if "%WITH_LIBSODIUM%"=="ON" set LIBSODIUMDIR=C:\projects\libsodium
@@ -188,7 +186,11 @@ install:
   - cmd: if "%WITH_LIBSODIUM%"=="ON" set SODIUM_INCLUDE_DIR="%LIBSODIUMDIR%\src\libsodium\include"
   - ps: if (${env:WITH_LIBSODIUM} -eq "ON") { Copy-Item "C:\projects\libsodium\bin\${env:Platform}\${env:Configuration}\${env:MSVCVERSION}\dynamic\libsodium.lib" -Destination "C:\projects\libsodium\bin\${env:Platform}\${env:Configuration}\${env:MSVCVERSION}\dynamic\sodium.lib" }
 ################### libsodium end
-  - cmd: if "%CMAKE_GENERATOR:~0,13%"=="Visual Studio" (if "%Platform%"=="x64" set "CMAKE_GENERATOR=%CMAKE_GENERATOR% Win64")
+  - cmd: if "%CMAKE_GENERATOR:~0,13%"=="Visual Studio" (
+           if "%Platform%"=="x64" (
+             if not "%MSVCVERSION%"=="v142" set "CMAKE_GENERATOR=%CMAKE_GENERATOR% Win64"
+           )
+         )
   - cmd: if "%CMAKE_GENERATOR%"=="Ninja" (
            appveyor DownloadFile https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-win.zip &&
            unzip ninja-win.zip &&
@@ -243,9 +245,9 @@ build_script:
   - cmd: if "%CMAKE_GENERATOR:~0,13%"=="Visual Studio" (
            if "%PLATFORM:~0,5%" == "Win32" (
              if "%MSVCYEAR%"=="vs2008" (
-               cmake --build %LIBZMQ_BUILDDIR% --config %configuration% --target install
+               set CMAKE_EXTRA_OPTS=--config %configuration% --target install
              ) else (
-               cmake --build %LIBZMQ_BUILDDIR% --config %configuration% --target install -- -verbosity:Minimal -maxcpucount -logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+               set CMAKE_EXTRA_OPTS=--config %configuration% --target install -- -verbosity:Minimal -maxcpucount -logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
              )
            ) else (
              if "%PLATFORM%" == "x64" (
