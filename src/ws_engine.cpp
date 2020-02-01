@@ -952,7 +952,7 @@ int zmq::ws_engine_t::decode_and_push (msg_t *msg_)
 
 int zmq::ws_engine_t::produce_close_message (msg_t *msg_)
 {
-    int rc = msg_->move (_close_msg);
+    const int rc = msg_->move (_close_msg);
     errno_assert (rc == 0);
 
     _next_msg = static_cast<int (stream_engine_base_t::*) (msg_t *)> (
@@ -979,7 +979,7 @@ int zmq::ws_engine_t::close_connection_after_close (msg_t *msg_)
 
 int zmq::ws_engine_t::produce_ping_message (msg_t *msg_)
 {
-    int rc = msg_->init ();
+    const int rc = msg_->init ();
     errno_assert (rc == 0);
     msg_->set_flags (msg_t::command | msg_t::ping);
 
@@ -995,7 +995,7 @@ int zmq::ws_engine_t::produce_ping_message (msg_t *msg_)
 
 int zmq::ws_engine_t::produce_pong_message (msg_t *msg_)
 {
-    int rc = msg_->init ();
+    const int rc = msg_->init ();
     errno_assert (rc == 0);
     msg_->set_flags (msg_t::command | msg_t::pong);
 
@@ -1011,7 +1011,7 @@ int zmq::ws_engine_t::process_command_message (msg_t *msg_)
           &ws_engine_t::produce_pong_message);
         out_event ();
     } else if (msg_->is_close_cmd ()) {
-        int rc = _close_msg.copy (*msg_);
+        const int rc = _close_msg.copy (*msg_);
         errno_assert (rc == 0);
         _next_msg = static_cast<int (stream_engine_base_t::*) (msg_t *)> (
           &ws_engine_t::produce_close_message);
