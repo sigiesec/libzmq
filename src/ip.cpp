@@ -405,9 +405,7 @@ static int make_fdpair_tcpip (zmq::fd_t *r_, zmq::fd_t *w_)
     *w_ = INVALID_SOCKET;
     *r_ = INVALID_SOCKET;
 
-    //  Create listening socket.
-    SOCKET listener;
-    listener = zmq::open_socket (AF_INET, SOCK_STREAM, 0);
+    SOCKET listener = zmq::open_socket (AF_INET, SOCK_STREAM, 0);
     wsa_assert (listener != INVALID_SOCKET);
 
     //  Set SO_REUSEADDR and TCP_NODELAY on listening socket.

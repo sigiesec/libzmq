@@ -730,9 +730,8 @@ static int zmq_poller_poll (zmq_pollitem_t *items_, int nitems_, long timeout_)
 {
     // implement zmq_poll on top of zmq_poller
     int rc;
-    zmq_poller_event_t *events;
     zmq::socket_poller_t poller;
-    events = new (std::nothrow) zmq_poller_event_t[nitems_];
+    zmq_poller_event_t *events = new (std::nothrow) zmq_poller_event_t[nitems_];
     alloc_assert (events);
 
     bool repeat_items = false;

@@ -240,13 +240,12 @@ struct curve_client_tools_t
       const uint8_t (&curve_secret_key_)[crypto_box_SECRETKEYBYTES],
       const uint8_t (&curve_server_key_)[crypto_box_PUBLICKEYBYTES])
     {
-        int rc;
         memcpy (public_key, curve_public_key_, crypto_box_PUBLICKEYBYTES);
         memcpy (secret_key, curve_secret_key_, crypto_box_SECRETKEYBYTES);
         memcpy (server_key, curve_server_key_, crypto_box_PUBLICKEYBYTES);
 
         //  Generate short-term key pair
-        rc = crypto_box_keypair (cn_public, cn_secret);
+        int rc = crypto_box_keypair (cn_public, cn_secret);
         zmq_assert (rc == 0);
     }
 

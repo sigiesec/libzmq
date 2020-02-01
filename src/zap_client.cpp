@@ -67,11 +67,10 @@ void zap_client_t::send_zap_request (const char *mechanism_,
     // write_zap_msg cannot fail. It could only fail if the HWM was exceeded,
     // but on the ZAP socket, the HWM is disabled.
 
-    int rc;
     msg_t msg;
 
     //  Address delimiter frame
-    rc = msg.init ();
+    int rc = msg.init ();
     errno_assert (rc == 0);
     msg.set_flags (msg_t::more);
     rc = session->write_zap_msg (&msg);

@@ -48,12 +48,11 @@ zmq::curve_server_t::curve_server_t (session_base_t *session_,
     curve_mechanism_base_t (
       session_, options_, "CurveZMQMESSAGES", "CurveZMQMESSAGEC")
 {
-    int rc;
     //  Fetch our secret key from socket options
     memcpy (_secret_key, options_.curve_secret_key, crypto_box_SECRETKEYBYTES);
 
     //  Generate short-term key pair
-    rc = crypto_box_keypair (_cn_public, _cn_secret);
+    int rc = crypto_box_keypair (_cn_public, _cn_secret);
     zmq_assert (rc == 0);
 }
 

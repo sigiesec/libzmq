@@ -1674,8 +1674,8 @@ void zmq::socket_base_t::pipe_terminated (pipe_t *pipe_)
     // Remove the pipe from _endpoints (set it to NULL).
     const std::string &identifier = pipe_->get_endpoint_pair ().identifier ();
     if (!identifier.empty ()) {
-        std::pair<endpoints_t::iterator, endpoints_t::iterator> range;
-        range = _endpoints.equal_range (identifier);
+        std::pair<endpoints_t::iterator, endpoints_t::iterator> range =
+          _endpoints.equal_range (identifier);
 
         for (endpoints_t::iterator it = range.first; it != range.second; ++it) {
             if (it->second.second == pipe_) {

@@ -1032,8 +1032,7 @@ encode_base64 (const unsigned char *in_, int in_len_, char *out_, int out_len_)
     int rem = 0;
 
     for (int ii = 0; ii < in_len_; ii++) {
-        unsigned char ch;
-        ch = in_[ii];
+        unsigned char ch = in_[ii];
         v = (v << 8) | ch;
         rem += 8;
         while (rem >= 6) {

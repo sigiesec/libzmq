@@ -596,14 +596,13 @@ int zmq::ip_resolver_t::get_interface_name (unsigned long index_,
 
 int zmq::ip_resolver_t::wchar_to_utf8 (const WCHAR *src_, char **dest_) const
 {
-    int rc;
     const int buffer_len =
       WideCharToMultiByte (CP_UTF8, 0, src_, -1, NULL, 0, NULL, 0);
 
     char *buffer = static_cast<char *> (malloc (buffer_len));
     alloc_assert (buffer);
 
-    rc =
+    int rc =
       WideCharToMultiByte (CP_UTF8, 0, src_, -1, buffer, buffer_len, NULL, 0);
 
     if (rc == 0) {
