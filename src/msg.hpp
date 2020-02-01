@@ -180,7 +180,7 @@ class msg_t
     };
 
   private:
-    zmq::atomic_counter_t *refcnt ();
+    zmq::atomic_counter_t *refcnt () const;
 
     //  Different message types.
     enum type_t

@@ -60,8 +60,8 @@ class session_base_t : public own_t, public io_object_t, public i_pipe_events
 
     //  Following functions are the interface exposed towards the engine.
     virtual void reset ();
-    void flush ();
-    void rollback ();
+    void flush () const;
+    void rollback () const;
     void engine_error (zmq::i_engine::error_reason_t reason_);
 
     //  i_pipe_events interface implementation.
@@ -85,12 +85,12 @@ class session_base_t : public own_t, public io_object_t, public i_pipe_events
     //  Receives message from ZAP socket.
     //  Returns 0 on success; -1 otherwise.
     //  The caller is responsible for freeing the message.
-    int read_zap_msg (msg_t *msg_);
+    int read_zap_msg (msg_t *msg_) const;
 
     //  Sends message to ZAP socket.
     //  Returns 0 on success; -1 otherwise.
     //  The function takes ownership of the message.
-    int write_zap_msg (msg_t *msg_);
+    int write_zap_msg (msg_t *msg_) const;
 
     socket_base_t *get_socket () const;
     const endpoint_uri_pair_t &get_endpoint () const;

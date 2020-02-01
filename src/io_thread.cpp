@@ -54,7 +54,7 @@ zmq::io_thread_t::~io_thread_t ()
     LIBZMQ_DELETE (_poller);
 }
 
-void zmq::io_thread_t::start ()
+void zmq::io_thread_t::start () const
 {
     char name[16] = "";
     snprintf (name, sizeof (name), "IO/%u",

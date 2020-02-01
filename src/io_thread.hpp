@@ -53,7 +53,7 @@ class io_thread_t ZMQ_FINAL : public object_t, public i_poll_events
     ~io_thread_t () ZMQ_FINAL;
 
     //  Launch the physical thread.
-    void start ();
+    void start () const;
 
     //  Ask underlying thread to stop.
     void stop ();

@@ -79,7 +79,7 @@ bool zmq::thread_t::is_current_thread () const
     return GetCurrentThreadId () == _thread_id;
 }
 
-void zmq::thread_t::stop ()
+void zmq::thread_t::stop () const
 {
     if (_started) {
         const DWORD rc = WaitForSingleObject (_descriptor, INFINITE);
@@ -187,7 +187,7 @@ void zmq::thread_t::start (thread_fn *tfn_, void *arg_, const char *name_)
         _started = true;
 }
 
-void zmq::thread_t::stop ()
+void zmq::thread_t::stop () const
 {
     if (_started)
         while ((_descriptor != NULL || _descriptor > 0)
@@ -263,7 +263,7 @@ void zmq::thread_t::start (thread_fn *tfn_, void *arg_, const char *name_)
     _started = true;
 }
 
-void zmq::thread_t::stop ()
+void zmq::thread_t::stop () const
 {
     if (_started) {
         int rc = pthread_join (_descriptor, NULL);

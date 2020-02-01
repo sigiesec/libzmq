@@ -176,7 +176,7 @@ class worker_poller_base_t : public poller_base_t
 
     //  Stops the worker thread. Should be called from the destructor of the
     //  leaf class.
-    void stop_worker ();
+    void stop_worker () const;
 
   private:
     //  Main worker thread routine.

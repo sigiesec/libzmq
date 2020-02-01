@@ -224,7 +224,7 @@ zmq::mechanism_t::status_t zmq::null_mechanism_t::status () const
     return command_sent && command_received ? error : handshaking;
 }
 
-void zmq::null_mechanism_t::send_zap_request ()
+void zmq::null_mechanism_t::send_zap_request () const
 {
     zap_client_t::send_zap_request ("NULL", 4, NULL, NULL, 0);
 }

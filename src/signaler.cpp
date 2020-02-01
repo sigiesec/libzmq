@@ -170,7 +170,7 @@ zmq::fd_t zmq::signaler_t::get_fd () const
     return _r;
 }
 
-void zmq::signaler_t::send ()
+void zmq::signaler_t::send () const
 {
 #if defined HAVE_FORK
     if (unlikely (pid != getpid ())) {
@@ -299,7 +299,7 @@ int zmq::signaler_t::wait (int timeout_) const
 #endif
 }
 
-void zmq::signaler_t::recv ()
+void zmq::signaler_t::recv () const
 {
 //  Attempt to read a signal.
 #if defined ZMQ_HAVE_EVENTFD
@@ -335,7 +335,7 @@ void zmq::signaler_t::recv ()
 #endif
 }
 
-int zmq::signaler_t::recv_failable ()
+int zmq::signaler_t::recv_failable () const
 {
 //  Attempt to read a signal.
 #if defined ZMQ_HAVE_EVENTFD

@@ -112,7 +112,7 @@ zmq::worker_poller_base_t::worker_poller_base_t (const thread_ctx_t &ctx_) :
 {
 }
 
-void zmq::worker_poller_base_t::stop_worker ()
+void zmq::worker_poller_base_t::stop_worker () const
 {
     _worker.stop ();
 }

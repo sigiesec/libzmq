@@ -150,7 +150,7 @@ template <typename T> class encoder_base_t : public i_encoder
         _new_msg_flag = new_msg_flag_;
     }
 
-    msg_t *in_progress () { return _in_progress; }
+    msg_t *in_progress () const { return _in_progress; }
 
   private:
     //  Where to get the data to write from.

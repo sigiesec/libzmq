@@ -65,27 +65,27 @@ zmq::io_object_t::handle_t zmq::io_object_t::add_fd (fd_t fd_)
     return _poller->add_fd (fd_, this);
 }
 
-void zmq::io_object_t::rm_fd (handle_t handle_)
+void zmq::io_object_t::rm_fd (handle_t handle_) const
 {
     _poller->rm_fd (handle_);
 }
 
-void zmq::io_object_t::set_pollin (handle_t handle_)
+void zmq::io_object_t::set_pollin (handle_t handle_) const
 {
     _poller->set_pollin (handle_);
 }
 
-void zmq::io_object_t::reset_pollin (handle_t handle_)
+void zmq::io_object_t::reset_pollin (handle_t handle_) const
 {
     _poller->reset_pollin (handle_);
 }
 
-void zmq::io_object_t::set_pollout (handle_t handle_)
+void zmq::io_object_t::set_pollout (handle_t handle_) const
 {
     _poller->set_pollout (handle_);
 }
 
-void zmq::io_object_t::reset_pollout (handle_t handle_)
+void zmq::io_object_t::reset_pollout (handle_t handle_) const
 {
     _poller->reset_pollout (handle_);
 }

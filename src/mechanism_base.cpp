@@ -53,7 +53,7 @@ int zmq::mechanism_base_t::check_basic_command_structure (msg_t *msg_) const
 }
 
 void zmq::mechanism_base_t::handle_error_reason (const char *error_reason_,
-                                                 size_t error_reason_len_)
+                                                 size_t error_reason_len_) const
 {
     const size_t status_code_len = 3;
     const char zero_digit = '0';

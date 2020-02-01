@@ -240,7 +240,7 @@ void zmq::plain_server_t::produce_error (msg_t *msg_) const
 }
 
 void zmq::plain_server_t::send_zap_request (const std::string &username_,
-                                            const std::string &password_)
+                                            const std::string &password_) const
 {
     const uint8_t *credentials[] = {
       reinterpret_cast<const uint8_t *> (username_.c_str ()),

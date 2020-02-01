@@ -59,7 +59,7 @@ class plain_server_t ZMQ_FINAL : public zap_client_common_handshake_t
     int process_initiate (msg_t *msg_);
 
     void send_zap_request (const std::string &username_,
-                           const std::string &password_);
+                           const std::string &password_) const;
 };
 }
 

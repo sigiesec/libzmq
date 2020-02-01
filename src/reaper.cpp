@@ -66,7 +66,7 @@ zmq::mailbox_t *zmq::reaper_t::get_mailbox ()
     return &_mailbox;
 }
 
-void zmq::reaper_t::start ()
+void zmq::reaper_t::start () const
 {
     zmq_assert (_mailbox.valid ());
 

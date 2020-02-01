@@ -597,7 +597,7 @@ int zmq::msg_t::set_group (const char *group_, size_t length_)
     return 0;
 }
 
-zmq::atomic_counter_t *zmq::msg_t::refcnt ()
+zmq::atomic_counter_t *zmq::msg_t::refcnt () const
 {
     switch (_u.base.type) {
         case type_lmsg:

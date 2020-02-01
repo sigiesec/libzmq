@@ -66,7 +66,7 @@ class ws_listener_t ZMQ_FINAL : public stream_listener_base_t
     //  newly created connection. The function may return retired_fd
     //  if the connection was dropped while waiting in the listen backlog
     //  or was denied because of accept filters.
-    fd_t accept ();
+    fd_t accept () const;
 
     int create_socket (const char *addr_);
 

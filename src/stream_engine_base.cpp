@@ -700,7 +700,8 @@ void zmq::stream_engine_base_t::set_handshake_timer ()
     }
 }
 
-bool zmq::stream_engine_base_t::init_properties (properties_t &properties_)
+bool zmq::stream_engine_base_t::init_properties (
+  properties_t &properties_) const
 {
     if (_peer_address.empty ())
         return false;

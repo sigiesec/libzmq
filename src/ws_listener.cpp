@@ -230,7 +230,7 @@ int zmq::ws_listener_t::set_local_address (const char *addr_)
     return 0;
 }
 
-zmq::fd_t zmq::ws_listener_t::accept ()
+zmq::fd_t zmq::ws_listener_t::accept () const
 {
     //  The situation where connection cannot be accepted due to insufficient
     //  resources is considered valid and treated by ignoring the connection.

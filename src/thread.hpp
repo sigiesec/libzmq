@@ -41,7 +41,7 @@
 
 namespace zmq
 {
-typedef void(thread_fn) (void *);
+typedef void (thread_fn) (void *);
 
 //  Class encapsulating OS thread. Thread initiation/termination is done
 //  using special functions rather than in constructor/destructor so that
@@ -86,7 +86,7 @@ class thread_t
     bool is_current_thread () const;
 
     //  Waits for thread termination.
-    void stop ();
+    void stop () const;
 
     // Sets the thread scheduling parameters. Only implemented for
     // pthread. Has no effect on other platforms.

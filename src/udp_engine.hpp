@@ -57,11 +57,11 @@ class udp_engine_t ZMQ_FINAL : public io_object_t, public i_engine
     // Set multicast TTL
     static int set_udp_multicast_ttl (fd_t s_, bool is_ipv6_, int hops_);
     // Set multicast address/interface
-    int set_udp_multicast_iface (fd_t s_,
-                                 bool is_ipv6_,
-                                 const udp_address_t *addr_);
+    static int set_udp_multicast_iface (fd_t s_,
+                                        bool is_ipv6_,
+                                        const udp_address_t *addr_);
     // Join a multicast group
-    int add_membership (fd_t s_, const udp_address_t *addr_);
+    static int add_membership (fd_t s_, const udp_address_t *addr_);
 
     //  Function to handle network issues.
     void error (error_reason_t reason_);

@@ -182,7 +182,7 @@ int zmq::session_base_t::push_msg (msg_t *msg_)
     return -1;
 }
 
-int zmq::session_base_t::read_zap_msg (msg_t *msg_)
+int zmq::session_base_t::read_zap_msg (msg_t *msg_) const
 {
     if (_zap_pipe == NULL) {
         errno = ENOTCONN;
@@ -197,7 +197,7 @@ int zmq::session_base_t::read_zap_msg (msg_t *msg_)
     return 0;
 }
 
-int zmq::session_base_t::write_zap_msg (msg_t *msg_)
+int zmq::session_base_t::write_zap_msg (msg_t *msg_) const
 {
     if (_zap_pipe == NULL || !_zap_pipe->write (msg_)) {
         errno = ENOTCONN;
@@ -216,13 +216,13 @@ void zmq::session_base_t::reset ()
 {
 }
 
-void zmq::session_base_t::flush ()
+void zmq::session_base_t::flush () const
 {
     if (_pipe)
         _pipe->flush ();
 }
 
-void zmq::session_base_t::rollback ()
+void zmq::session_base_t::rollback () const
 {
     if (_pipe)
         _pipe->rollback ();

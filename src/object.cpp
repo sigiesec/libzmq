@@ -168,18 +168,18 @@ void zmq::object_t::process_command (const command_t &cmd_)
 }
 
 int zmq::object_t::register_endpoint (const char *addr_,
-                                      const endpoint_t &endpoint_)
+                                      const endpoint_t &endpoint_) const
 {
     return _ctx->register_endpoint (addr_, endpoint_);
 }
 
 int zmq::object_t::unregister_endpoint (const std::string &addr_,
-                                        socket_base_t *socket_)
+                                        socket_base_t *socket_) const
 {
     return _ctx->unregister_endpoint (addr_, socket_);
 }
 
-void zmq::object_t::unregister_endpoints (socket_base_t *socket_)
+void zmq::object_t::unregister_endpoints (socket_base_t *socket_) const
 {
     return _ctx->unregister_endpoints (socket_);
 }
@@ -191,18 +191,18 @@ zmq::endpoint_t zmq::object_t::find_endpoint (const char *addr_) const
 
 void zmq::object_t::pend_connection (const std::string &addr_,
                                      const endpoint_t &endpoint_,
-                                     pipe_t **pipes_)
+                                     pipe_t **pipes_) const
 {
     _ctx->pend_connection (addr_, endpoint_, pipes_);
 }
 
 void zmq::object_t::connect_pending (const char *addr_,
-                                     zmq::socket_base_t *bind_socket_)
+                                     zmq::socket_base_t *bind_socket_) const
 {
     return _ctx->connect_pending (addr_, bind_socket_);
 }
 
-void zmq::object_t::destroy_socket (socket_base_t *socket_)
+void zmq::object_t::destroy_socket (socket_base_t *socket_) const
 {
     _ctx->destroy_socket (socket_);
 }
@@ -222,7 +222,7 @@ void zmq::object_t::send_stop ()
     _ctx->send_command (_tid, cmd);
 }
 
-void zmq::object_t::send_plug (own_t *destination_, bool inc_seqnum_)
+void zmq::object_t::send_plug (own_t *destination_, bool inc_seqnum_) const
 {
     if (inc_seqnum_)
         destination_->inc_seqnum ();
@@ -233,7 +233,7 @@ void zmq::object_t::send_plug (own_t *destination_, bool inc_seqnum_)
     send_command (cmd);
 }
 
-void zmq::object_t::send_own (own_t *destination_, own_t *object_)
+void zmq::object_t::send_own (own_t *destination_, own_t *object_) const
 {
     destination_->inc_seqnum ();
     command_t cmd;
@@ -245,7 +245,7 @@ void zmq::object_t::send_own (own_t *destination_, own_t *object_)
 
 void zmq::object_t::send_attach (session_base_t *destination_,
                                  i_engine *engine_,
-                                 bool inc_seqnum_)
+                                 bool inc_seqnum_) const
 {
     if (inc_seqnum_)
         destination_->inc_seqnum ();
@@ -259,7 +259,7 @@ void zmq::object_t::send_attach (session_base_t *destination_,
 
 void zmq::object_t::send_bind (own_t *destination_,
                                pipe_t *pipe_,
-                               bool inc_seqnum_)
+                               bool inc_seqnum_) const
 {
     if (inc_seqnum_)
         destination_->inc_seqnum ();
@@ -271,7 +271,7 @@ void zmq::object_t::send_bind (own_t *destination_,
     send_command (cmd);
 }
 
-void zmq::object_t::send_activate_read (pipe_t *destination_)
+void zmq::object_t::send_activate_read (pipe_t *destination_) const
 {
     command_t cmd;
     cmd.destination = destination_;
@@ -280,7 +280,7 @@ void zmq::object_t::send_activate_read (pipe_t *destination_)
 }
 
 void zmq::object_t::send_activate_write (pipe_t *destination_,
-                                         uint64_t msgs_read_)
+                                         uint64_t msgs_read_) const
 {
     command_t cmd;
     cmd.destination = destination_;
@@ -289,7 +289,7 @@ void zmq::object_t::send_activate_write (pipe_t *destination_,
     send_command (cmd);
 }
 
-void zmq::object_t::send_hiccup (pipe_t *destination_, void *pipe_)
+void zmq::object_t::send_hiccup (pipe_t *destination_, void *pipe_) const
 {
     command_t cmd;
     cmd.destination = destination_;
@@ -298,10 +298,11 @@ void zmq::object_t::send_hiccup (pipe_t *destination_, void *pipe_)
     send_command (cmd);
 }
 
-void zmq::object_t::send_pipe_peer_stats (pipe_t *destination_,
-                                          uint64_t queue_count_,
-                                          own_t *socket_base_,
-                                          endpoint_uri_pair_t *endpoint_pair_)
+void zmq::object_t::send_pipe_peer_stats (
+  pipe_t *destination_,
+  uint64_t queue_count_,
+  own_t *socket_base_,
+  endpoint_uri_pair_t *endpoint_pair_) const
 {
     command_t cmd;
     cmd.destination = destination_;
@@ -316,7 +317,7 @@ void zmq::object_t::send_pipe_stats_publish (
   own_t *destination_,
   uint64_t outbound_queue_count_,
   uint64_t inbound_queue_count_,
-  endpoint_uri_pair_t *endpoint_pair_)
+  endpoint_uri_pair_t *endpoint_pair_) const
 {
     command_t cmd;
     cmd.destination = destination_;
@@ -327,7 +328,7 @@ void zmq::object_t::send_pipe_stats_publish (
     send_command (cmd);
 }
 
-void zmq::object_t::send_pipe_term (pipe_t *destination_)
+void zmq::object_t::send_pipe_term (pipe_t *destination_) const
 {
     command_t cmd;
     cmd.destination = destination_;
@@ -335,7 +336,7 @@ void zmq::object_t::send_pipe_term (pipe_t *destination_)
     send_command (cmd);
 }
 
-void zmq::object_t::send_pipe_term_ack (pipe_t *destination_)
+void zmq::object_t::send_pipe_term_ack (pipe_t *destination_) const
 {
     command_t cmd;
     cmd.destination = destination_;
@@ -345,7 +346,7 @@ void zmq::object_t::send_pipe_term_ack (pipe_t *destination_)
 
 void zmq::object_t::send_pipe_hwm (pipe_t *destination_,
                                    int inhwm_,
-                                   int outhwm_)
+                                   int outhwm_) const
 {
     command_t cmd;
     cmd.destination = destination_;
@@ -355,7 +356,7 @@ void zmq::object_t::send_pipe_hwm (pipe_t *destination_,
     send_command (cmd);
 }
 
-void zmq::object_t::send_term_req (own_t *destination_, own_t *object_)
+void zmq::object_t::send_term_req (own_t *destination_, own_t *object_) const
 {
     command_t cmd;
     cmd.destination = destination_;
@@ -364,7 +365,7 @@ void zmq::object_t::send_term_req (own_t *destination_, own_t *object_)
     send_command (cmd);
 }
 
-void zmq::object_t::send_term (own_t *destination_, int linger_)
+void zmq::object_t::send_term (own_t *destination_, int linger_) const
 {
     command_t cmd;
     cmd.destination = destination_;
@@ -373,7 +374,7 @@ void zmq::object_t::send_term (own_t *destination_, int linger_)
     send_command (cmd);
 }
 
-void zmq::object_t::send_term_ack (own_t *destination_)
+void zmq::object_t::send_term_ack (own_t *destination_) const
 {
     command_t cmd;
     cmd.destination = destination_;
@@ -382,7 +383,7 @@ void zmq::object_t::send_term_ack (own_t *destination_)
 }
 
 void zmq::object_t::send_term_endpoint (own_t *destination_,
-                                        std::string *endpoint_)
+                                        std::string *endpoint_) const
 {
     command_t cmd;
     cmd.destination = destination_;
@@ -391,7 +392,7 @@ void zmq::object_t::send_term_endpoint (own_t *destination_,
     send_command (cmd);
 }
 
-void zmq::object_t::send_reap (class socket_base_t *socket_)
+void zmq::object_t::send_reap (class socket_base_t *socket_) const
 {
     command_t cmd;
     cmd.destination = _ctx->get_reaper ();
@@ -400,7 +401,7 @@ void zmq::object_t::send_reap (class socket_base_t *socket_)
     send_command (cmd);
 }
 
-void zmq::object_t::send_reaped ()
+void zmq::object_t::send_reaped () const
 {
     command_t cmd;
     cmd.destination = _ctx->get_reaper ();
@@ -408,7 +409,7 @@ void zmq::object_t::send_reaped ()
     send_command (cmd);
 }
 
-void zmq::object_t::send_inproc_connected (zmq::socket_base_t *socket_)
+void zmq::object_t::send_inproc_connected (zmq::socket_base_t *socket_) const
 {
     command_t cmd;
     cmd.destination = socket_;
@@ -416,7 +417,7 @@ void zmq::object_t::send_inproc_connected (zmq::socket_base_t *socket_)
     send_command (cmd);
 }
 
-void zmq::object_t::send_done ()
+void zmq::object_t::send_done () const
 {
     command_t cmd;
     cmd.destination = NULL;
@@ -528,7 +529,7 @@ void zmq::object_t::process_seqnum ()
     zmq_assert (false);
 }
 
-void zmq::object_t::send_command (const command_t &cmd_)
+void zmq::object_t::send_command (const command_t &cmd_) const
 {
     _ctx->send_command (cmd_.destination->get_tid (), cmd_);
 }

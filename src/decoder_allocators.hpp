@@ -52,9 +52,9 @@ class c_single_allocator
 
     ~c_single_allocator () { std::free (_buf); }
 
-    unsigned char *allocate () { return _buf; }
+    unsigned char *allocate () const { return _buf; }
 
-    void deallocate () {}
+    static void deallocate () {}
 
     std::size_t size () const { return _buf_size; }
 
@@ -100,21 +100,21 @@ class shared_message_memory_allocator
     // the messages constructed on top of it.
     unsigned char *release ();
 
-    void inc_ref ();
+    void inc_ref () const;
 
     static void call_dec_ref (void *, void *hint_);
 
     std::size_t size () const;
 
     // Return pointer to the first message data byte.
-    unsigned char *data ();
+    unsigned char *data () const;
 
     // Return pointer to the first byte of the buffer.
-    unsigned char *buffer () { return _buf; }
+    unsigned char *buffer () const { return _buf; }
 
     void resize (std::size_t new_size_) { _buf_size = new_size_; }
 
-    zmq::msg_t::content_t *provide_content () { return _msg_content; }
+    zmq::msg_t::content_t *provide_content () const { return _msg_content; }
 
     void advance_content () { _msg_content++; }
 

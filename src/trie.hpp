@@ -56,7 +56,7 @@ class trie_t
 
     //  Apply the function supplied to each subscription in the trie.
     void apply (void (*func_) (unsigned char *data_, size_t size_, void *arg_),
-                void *arg_);
+                void *arg_) const;
 
   private:
     void apply_helper (unsigned char **buff_,

@@ -114,7 +114,7 @@ class pipe_t ZMQ_FINAL : public object_t,
     void rollback () const;
 
     //  Flush the messages downstream.
-    void flush ();
+    void flush () const;
 
     //  Temporarily disconnects the inbound message stream and drops
     //  all the messages on the fly. Causes 'hiccuped' event to be generated
@@ -137,7 +137,7 @@ class pipe_t ZMQ_FINAL : public object_t,
     void set_hwms_boost (int inhwmboost_, int outhwmboost_);
 
     // send command to peer for notify the change of hwm
-    void send_hwms_to_peer (int inhwm_, int outhwm_);
+    void send_hwms_to_peer (int inhwm_, int outhwm_) const;
 
     //  Returns true if HWM is not reached
     bool check_hwm () const;
@@ -145,7 +145,7 @@ class pipe_t ZMQ_FINAL : public object_t,
     void set_endpoint_pair (endpoint_uri_pair_t endpoint_pair_);
     const endpoint_uri_pair_t &get_endpoint_pair () const;
 
-    void send_stats_to_peer (own_t *socket_base_);
+    void send_stats_to_peer (own_t *socket_base_) const;
 
   private:
     //  Type of the underlying lock-free pipe.

@@ -66,7 +66,7 @@ class null_mechanism_t ZMQ_FINAL : public zap_client_t
     int process_error_command (const unsigned char *cmd_data_,
                                size_t data_size_);
 
-    void send_zap_request ();
+    void send_zap_request () const;
 };
 }
 

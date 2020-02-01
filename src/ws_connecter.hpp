@@ -83,7 +83,7 @@ class ws_connecter_t ZMQ_FINAL : public stream_connecter_base_t
     fd_t connect ();
 
     //  Tunes a connected socket.
-    bool tune_socket (fd_t fd_);
+    bool tune_socket (fd_t fd_) const;
 
     //  True iff a timer has been started.
     bool _connect_timer_started;

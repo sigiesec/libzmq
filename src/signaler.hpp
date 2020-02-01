@@ -53,10 +53,10 @@ class signaler_t
     // Returns the socket/file descriptor
     // May return retired_fd if the signaler could not be initialized.
     fd_t get_fd () const;
-    void send ();
+    void send () const;
     int wait (int timeout_) const;
-    void recv ();
-    int recv_failable ();
+    void recv () const;
+    int recv_failable () const;
 
     bool valid () const;
 

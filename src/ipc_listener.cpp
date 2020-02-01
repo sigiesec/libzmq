@@ -228,7 +228,7 @@ int zmq::ipc_listener_t::close ()
 
 #if defined ZMQ_HAVE_SO_PEERCRED
 
-bool zmq::ipc_listener_t::filter (fd_t sock_)
+bool zmq::ipc_listener_t::filter (fd_t sock_) const
 {
     if (options.ipc_uid_accept_filters.empty ()
         && options.ipc_pid_accept_filters.empty ()
@@ -269,7 +269,7 @@ bool zmq::ipc_listener_t::filter (fd_t sock_)
 
 #elif defined ZMQ_HAVE_LOCAL_PEERCRED
 
-bool zmq::ipc_listener_t::filter (fd_t sock_)
+bool zmq::ipc_listener_t::filter (fd_t sock_) const
 {
     if (options.ipc_uid_accept_filters.empty ()
         && options.ipc_gid_accept_filters.empty ())
@@ -296,7 +296,7 @@ bool zmq::ipc_listener_t::filter (fd_t sock_)
 
 #endif
 
-zmq::fd_t zmq::ipc_listener_t::accept ()
+zmq::fd_t zmq::ipc_listener_t::accept () const
 {
     //  Accept one connection and deal with different failure modes.
     //  The situation where connection cannot be accepted due to insufficient

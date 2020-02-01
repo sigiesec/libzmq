@@ -48,7 +48,7 @@ class reaper_t ZMQ_FINAL : public object_t, public i_poll_events
 
     mailbox_t *get_mailbox ();
 
-    void start ();
+    void start () const;
     void stop ();
 
     //  i_poll_events implementation.

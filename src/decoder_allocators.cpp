@@ -121,7 +121,7 @@ void zmq::shared_message_memory_allocator::clear ()
     _msg_content = NULL;
 }
 
-void zmq::shared_message_memory_allocator::inc_ref ()
+void zmq::shared_message_memory_allocator::inc_ref () const
 {
     (reinterpret_cast<zmq::atomic_counter_t *> (_buf))->add (1);
 }
@@ -145,7 +145,7 @@ std::size_t zmq::shared_message_memory_allocator::size () const
     return _buf_size;
 }
 
-unsigned char *zmq::shared_message_memory_allocator::data ()
+unsigned char *zmq::shared_message_memory_allocator::data () const
 {
     return _buf + sizeof (zmq::atomic_counter_t);
 }

@@ -292,7 +292,7 @@ zmq::fd_t zmq::tcp_connecter_t::connect ()
     return result;
 }
 
-bool zmq::tcp_connecter_t::tune_socket (const fd_t fd_)
+bool zmq::tcp_connecter_t::tune_socket (const fd_t fd_) const
 {
     const int rc = tune_tcp_socket (fd_)
                    | tune_tcp_keepalives (

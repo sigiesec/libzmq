@@ -118,7 +118,7 @@ void zmq::epoll_t::rm_fd (handle_t handle_)
     adjust_load (-1);
 }
 
-void zmq::epoll_t::set_pollin (handle_t handle_)
+void zmq::epoll_t::set_pollin (handle_t handle_) const
 {
     check_thread ();
     poll_entry_t *pe = static_cast<poll_entry_t *> (handle_);
@@ -127,7 +127,7 @@ void zmq::epoll_t::set_pollin (handle_t handle_)
     errno_assert (rc != -1);
 }
 
-void zmq::epoll_t::reset_pollin (handle_t handle_)
+void zmq::epoll_t::reset_pollin (handle_t handle_) const
 {
     check_thread ();
     poll_entry_t *pe = static_cast<poll_entry_t *> (handle_);
@@ -136,7 +136,7 @@ void zmq::epoll_t::reset_pollin (handle_t handle_)
     errno_assert (rc != -1);
 }
 
-void zmq::epoll_t::set_pollout (handle_t handle_)
+void zmq::epoll_t::set_pollout (handle_t handle_) const
 {
     check_thread ();
     poll_entry_t *pe = static_cast<poll_entry_t *> (handle_);
@@ -145,7 +145,7 @@ void zmq::epoll_t::set_pollout (handle_t handle_)
     errno_assert (rc != -1);
 }
 
-void zmq::epoll_t::reset_pollout (handle_t handle_)
+void zmq::epoll_t::reset_pollout (handle_t handle_) const
 {
     check_thread ();
     poll_entry_t *pe = static_cast<poll_entry_t *> (handle_);
@@ -154,7 +154,7 @@ void zmq::epoll_t::reset_pollout (handle_t handle_)
     errno_assert (rc != -1);
 }
 
-void zmq::epoll_t::stop ()
+void zmq::epoll_t::stop () const
 {
     check_thread ();
 }

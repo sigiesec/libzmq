@@ -76,7 +76,7 @@ class stream_engine_base_t : public io_object_t, public i_engine
 
   protected:
     typedef metadata_t::dict_t properties_t;
-    bool init_properties (properties_t &properties_);
+    bool init_properties (properties_t &properties_) const;
 
     //  Function to handle network disconnections.
     virtual void error (error_reason_t reason_);
@@ -104,11 +104,11 @@ class stream_engine_base_t : public io_object_t, public i_engine
     virtual int read (void *data, size_t size_);
     virtual int write (const void *data_, size_t size_);
 
-    void reset_pollout () { io_object_t::reset_pollout (_handle); }
-    void set_pollout () { io_object_t::set_pollout (_handle); }
-    void set_pollin () { io_object_t::set_pollin (_handle); }
-    session_base_t *session () { return _session; }
-    socket_base_t *socket () { return _socket; }
+    void reset_pollout () const { io_object_t::reset_pollout (_handle); }
+    void set_pollout () const { io_object_t::set_pollout (_handle); }
+    void set_pollin () const { io_object_t::set_pollin (_handle); }
+    session_base_t *session () const { return _session; }
+    socket_base_t *socket () const { return _socket; }
 
     const options_t _options;
 

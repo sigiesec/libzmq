@@ -66,11 +66,11 @@ class epoll_t ZMQ_FINAL : public worker_poller_base_t
     //  "poller" concept.
     handle_t add_fd (fd_t fd_, zmq::i_poll_events *events_);
     void rm_fd (handle_t handle_);
-    void set_pollin (handle_t handle_);
-    void reset_pollin (handle_t handle_);
-    void set_pollout (handle_t handle_);
-    void reset_pollout (handle_t handle_);
-    void stop ();
+    void set_pollin (handle_t handle_) const;
+    void reset_pollin (handle_t handle_) const;
+    void set_pollout (handle_t handle_) const;
+    void reset_pollout (handle_t handle_) const;
+    void stop () const;
 
     static int max_fds ();
 

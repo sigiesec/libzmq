@@ -260,7 +260,7 @@ void zmq::pipe_t::rollback () const
     }
 }
 
-void zmq::pipe_t::flush ()
+void zmq::pipe_t::flush () const
 {
     //  The peer does not exist anymore at this point.
     if (_state == term_ack_sent)
@@ -550,7 +550,7 @@ bool zmq::pipe_t::check_hwm () const
     return !full;
 }
 
-void zmq::pipe_t::send_hwms_to_peer (int inhwm_, int outhwm_)
+void zmq::pipe_t::send_hwms_to_peer (int inhwm_, int outhwm_) const
 {
     send_pipe_hwm (_peer, inhwm_, outhwm_);
 }
@@ -565,7 +565,7 @@ const zmq::endpoint_uri_pair_t &zmq::pipe_t::get_endpoint_pair () const
     return _endpoint_pair;
 }
 
-void zmq::pipe_t::send_stats_to_peer (own_t *socket_base_)
+void zmq::pipe_t::send_stats_to_peer (own_t *socket_base_) const
 {
     endpoint_uri_pair_t *ep =
       new (std::nothrow) endpoint_uri_pair_t (_endpoint_pair);
