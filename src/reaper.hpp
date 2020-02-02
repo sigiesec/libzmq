@@ -44,8 +44,7 @@ class reaper_t ZMQ_FINAL : public object_t, public i_poll_events
 {
   public:
     reaper_t (zmq::ctx_t *ctx_, uint32_t tid_);
-    ~reaper_t () ZMQ_FINAL;
-
+    
     mailbox_t *get_mailbox ();
 
     void start () const;
@@ -69,7 +68,7 @@ class reaper_t ZMQ_FINAL : public object_t, public i_poll_events
     poller_t::handle_t _mailbox_handle;
 
     //  I/O multiplexing is performed using a poller object.
-    poller_t *_poller;
+    scoped_ptr_t<poller_t, ScopedPtrPolicy_Modifiable> _poller;
 
     //  Number of sockets being reaped at the moment.
     int _sockets;

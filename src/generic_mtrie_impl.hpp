@@ -42,17 +42,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 template <typename T>
 zmq::generic_mtrie_t<T>::generic_mtrie_t () :
-    _pipes (0),
-    _min (0),
-    _count (0),
-    _live_nodes (0)
+    _pipes (), _min (0), _count (0), _live_nodes (0)
 {
 }
 
 template <typename T> zmq::generic_mtrie_t<T>::~generic_mtrie_t ()
 {
-    LIBZMQ_DELETE (_pipes);
-
     if (_count == 1) {
         zmq_assert (_next.node);
         LIBZMQ_DELETE (_next.node);
@@ -81,8 +76,7 @@ bool zmq::generic_mtrie_t<T>::add_helper (prefix_t prefix_,
     if (!size_) {
         const bool result = !_pipes;
         if (!_pipes) {
-            _pipes = new (std::nothrow) pipes_t;
-            alloc_assert (_pipes);
+            _pipes.init (new (std::nothrow) pipes_t);
         }
         _pipes->insert (pipe_);
         return result;
@@ -182,7 +176,7 @@ void zmq::generic_mtrie_t<T>::rm_helper (value_t *pipe_,
         }
 
         if (_pipes->empty ()) {
-            LIBZMQ_DELETE (_pipes);
+            _pipes.reset ();
         }
     }
 
@@ -332,7 +326,7 @@ typename zmq::generic_mtrie_t<T>::rm_result zmq::generic_mtrie_t<T>::rm_helper (
         typename pipes_t::size_type erased = _pipes->erase (pipe_);
         if (_pipes->empty ()) {
             zmq_assert (erased == 1);
-            LIBZMQ_DELETE (_pipes);
+            _pipes.reset ();
             return last_value_removed;
         }
         return (erased == 1) ? values_remain : not_found;

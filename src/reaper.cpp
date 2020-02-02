@@ -36,15 +36,16 @@
 zmq::reaper_t::reaper_t (class ctx_t *ctx_, uint32_t tid_) :
     object_t (ctx_, tid_),
     _mailbox_handle (static_cast<poller_t::handle_t> (NULL)),
-    _poller (NULL),
     _sockets (0),
     _terminating (false)
 {
     if (!_mailbox.valid ())
         return;
 
-    _poller = new (std::nothrow) poller_t (*ctx_);
-    alloc_assert (_poller);
+    //  The early return above is the only reason why _poller is modifiable,
+    //  actually why it is a pointer at all. Would it hurt to always
+    //  initialize the poller, even if the _mailbox is not valid?
+    _poller.init (new (std::nothrow) poller_t (*ctx_));
 
     if (_mailbox.get_fd () != retired_fd) {
         _mailbox_handle = _poller->add_fd (_mailbox.get_fd (), this);
@@ -54,11 +55,6 @@ zmq::reaper_t::reaper_t (class ctx_t *ctx_, uint32_t tid_) :
 #ifdef HAVE_FORK
     _pid = getpid ();
 #endif
-}
-
-zmq::reaper_t::~reaper_t ()
-{
-    LIBZMQ_DELETE (_poller);
 }
 
 zmq::mailbox_t *zmq::reaper_t::get_mailbox ()
@@ -130,7 +126,7 @@ void zmq::reaper_t::process_stop ()
 void zmq::reaper_t::process_reap (socket_base_t *socket_)
 {
     //  Add the socket to the poller.
-    socket_->start_reaping (_poller);
+    socket_->start_reaping (_poller.get ());
 
     ++_sockets;
 }

@@ -933,6 +933,7 @@ set(cxx-sources
   mailbox_safe.hpp
   mechanism.hpp
   mechanism_base.hpp
+  memory.hpp
   metadata.hpp
   msg.hpp
   mtrie.hpp

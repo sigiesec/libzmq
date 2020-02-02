@@ -302,11 +302,11 @@ void zmq::pipe_t::process_hiccup (void *pipe_)
         const int rc = msg.close ();
         errno_assert (rc == 0);
     }
-    LIBZMQ_DELETE (_out_pipe);
+    _out_pipe.reset ();
 
     //  Plug in the new outpipe.
     zmq_assert (pipe_);
-    _out_pipe = static_cast<upipe_t *> (pipe_);
+    _out_pipe.init (static_cast<upipe_t *> (pipe_));
     _out_active = true;
 
     //  If appropriate, notify the user about the hiccup.
@@ -329,7 +329,7 @@ void zmq::pipe_t::process_pipe_term ()
             _state = waiting_for_delimiter;
         else {
             _state = term_ack_sent;
-            _out_pipe = NULL;
+            _out_pipe.release ();
             send_pipe_term_ack (_peer);
         }
     }
@@ -338,7 +338,7 @@ void zmq::pipe_t::process_pipe_term ()
     //  term command as well, so we can move straight to term_ack_sent state.
     else if (_state == delimiter_received) {
         _state = term_ack_sent;
-        _out_pipe = NULL;
+        _out_pipe.release ();
         send_pipe_term_ack (_peer);
     }
 
@@ -347,7 +347,7 @@ void zmq::pipe_t::process_pipe_term ()
     //  own ack.
     else if (_state == term_req_sent1) {
         _state = term_req_sent2;
-        _out_pipe = NULL;
+        _out_pipe.release ();
         send_pipe_term_ack (_peer);
     }
 }
@@ -363,7 +363,7 @@ void zmq::pipe_t::process_pipe_term_ack ()
     //  the peer before deallocating this side of the pipe.
     //  All the other states are invalid.
     if (_state == term_req_sent1) {
-        _out_pipe = NULL;
+        _out_pipe.release ();
         send_pipe_term_ack (_peer);
     } else
         zmq_assert (_state == term_ack_sent || _state == term_req_sent2);
@@ -382,7 +382,7 @@ void zmq::pipe_t::process_pipe_term_ack ()
         }
     }
 
-    LIBZMQ_DELETE (_in_pipe);
+    _in_pipe.reset ();
 
     //  Deallocate the pipe object
     delete this;
@@ -423,7 +423,7 @@ void zmq::pipe_t::terminate (bool delay_)
     else if (_state == waiting_for_delimiter && !_delay) {
         //  Drop any unfinished outbound messages.
         rollback ();
-        _out_pipe = NULL;
+        _out_pipe.release ();
         send_pipe_term_ack (_peer);
         _state = term_ack_sent;
     }
@@ -493,7 +493,7 @@ void zmq::pipe_t::process_delimiter ()
     if (_state == active)
         _state = delimiter_received;
     else {
-        _out_pipe = NULL;
+        _out_pipe.release ();
         send_pipe_term_ack (_peer);
         _state = term_ack_sent;
     }
@@ -509,16 +509,15 @@ void zmq::pipe_t::hiccup ()
     //  responsible for deallocating it.
 
     //  Create new inpipe.
-    _in_pipe =
+    _in_pipe.init (
       _conflate
         ? static_cast<upipe_t *> (new (std::nothrow) ypipe_conflate_t<msg_t> ())
-        : new (std::nothrow) ypipe_t<msg_t, message_pipe_granularity> ();
+        : new (std::nothrow) ypipe_t<msg_t, message_pipe_granularity> ());
 
-    alloc_assert (_in_pipe);
     _in_active = true;
 
     //  Notify the peer about the hiccup.
-    send_hiccup (_peer, _in_pipe);
+    send_hiccup (_peer, _in_pipe.get ());
 }
 
 void zmq::pipe_t::set_hwms (int inhwm_, int outhwm_)

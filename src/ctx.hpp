@@ -43,6 +43,7 @@
 #include "options.hpp"
 #include "atomic_counter.hpp"
 #include "thread.hpp"
+#include "memory.hpp"
 
 namespace zmq
 {
@@ -197,10 +198,10 @@ class ctx_t ZMQ_FINAL : public thread_ctx_t
     mutex_t _slot_sync;
 
     //  The reaper thread.
-    zmq::reaper_t *_reaper;
+    scoped_ptr_t<zmq::reaper_t, ScopedPtrPolicy_Modifiable> _reaper;
 
     //  I/O threads.
-    typedef std::vector<zmq::io_thread_t *> io_threads_t;
+    typedef ptr_vector_t<zmq::io_thread_t> io_threads_t;
     io_threads_t _io_threads;
 
     //  Array of pointers to mailboxes for both application and I/O threads.

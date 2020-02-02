@@ -107,6 +107,7 @@ src_libzmq_la_SOURCES = \
 	src/mechanism.hpp  \
 	src/mechanism_base.cpp \
 	src/mechanism_base.hpp  \
+	src/memory.hpp  \
 	src/metadata.cpp \
 	src/metadata.hpp \
 	src/msg.cpp \

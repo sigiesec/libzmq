@@ -75,10 +75,6 @@ zmq::epoll_t::~epoll_t ()
 #else
     close (_epoll_fd);
 #endif
-    for (retired_t::iterator it = _retired.begin (), end = _retired.end ();
-         it != end; ++it) {
-        LIBZMQ_DELETE (*it);
-    }
 }
 
 zmq::epoll_t::handle_t zmq::epoll_t::add_fd (fd_t fd_, i_poll_events *events_)
@@ -207,10 +203,6 @@ void zmq::epoll_t::loop ()
         }
 
         //  Destroy retired event sources.
-        for (retired_t::iterator it = _retired.begin (), end = _retired.end ();
-             it != end; ++it) {
-            LIBZMQ_DELETE (*it);
-        }
         _retired.clear ();
     }
 }

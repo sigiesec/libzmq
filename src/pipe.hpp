@@ -38,6 +38,7 @@
 #include "blob.hpp"
 #include "options.hpp"
 #include "endpoint.hpp"
+#include "memory.hpp"
 
 namespace zmq
 {
@@ -183,8 +184,8 @@ class pipe_t ZMQ_FINAL : public object_t,
     ~pipe_t () ZMQ_OVERRIDE;
 
     //  Underlying pipes for both directions.
-    upipe_t *_in_pipe;
-    upipe_t *_out_pipe;
+    scoped_ptr_t<upipe_t, ScopedPtrPolicy_Modifiable> _in_pipe;
+    scoped_ptr_t<upipe_t, ScopedPtrPolicy_Releasable> _out_pipe;
 
     //  Can the pipe be read from / written to?
     bool _in_active;

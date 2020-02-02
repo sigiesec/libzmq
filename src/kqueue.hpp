@@ -90,7 +90,7 @@ class kqueue_t ZMQ_FINAL : public worker_poller_base_t
     };
 
     //  List of retired event sources.
-    typedef std::vector<poll_entry_t *> retired_t;
+    typedef ptr_vector_t<poll_entry_t> retired_t;
     retired_t retired;
 
     ZMQ_NON_COPYABLE_NOR_MOVABLE (kqueue_t)

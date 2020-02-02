@@ -77,7 +77,6 @@ zmq::ctx_t::ctx_t () :
     _tag (ZMQ_CTX_TAG_VALUE_GOOD),
     _starting (true),
     _terminating (false),
-    _reaper (NULL),
     _max_sockets (clipped_maxsocket (ZMQ_MAX_SOCKETS_DFLT)),
     _max_msgsz (INT_MAX),
     _io_thread_count (ZMQ_IO_THREADS_DFLT),
@@ -123,12 +122,10 @@ zmq::ctx_t::~ctx_t ()
     }
 
     //  Wait till I/O threads actually terminate.
-    for (io_threads_t::size_type i = 0; i != io_threads_size; i++) {
-        LIBZMQ_DELETE (_io_threads[i]);
-    }
+    _io_threads.clear ();
 
     //  Deallocate the reaper thread object.
-    LIBZMQ_DELETE (_reaper);
+    _reaper.reset();
 
     //  The mailboxes in _slots themselves were deallocated with their
     //  corresponding io_thread/socket objects.
@@ -427,11 +424,12 @@ bool zmq::ctx_t::start ()
     _slots[term_tid] = &_term_mailbox;
 
     //  Create the reaper thread.
-    _reaper = new (std::nothrow) reaper_t (this, reaper_tid);
-    if (!_reaper) {
+    reaper_t *const reaper = new (std::nothrow) reaper_t (this, reaper_tid);
+    if (!reaper) {
         errno = ENOMEM;
         goto fail_cleanup_slots;
     }
+    _reaper.init (reaper);
     if (!_reaper->get_mailbox ()->valid ())
         goto fail_cleanup_reaper;
     _slots[reaper_tid] = _reaper->get_mailbox ();
@@ -467,8 +465,7 @@ bool zmq::ctx_t::start ()
 
 fail_cleanup_reaper:
     _reaper->stop ();
-    delete _reaper;
-    _reaper = NULL;
+    _reaper.reset();
 
 fail_cleanup_slots:
     _slots.clear ();
@@ -536,7 +533,7 @@ void zmq::ctx_t::destroy_socket (class socket_base_t *socket_)
 
 zmq::object_t *zmq::ctx_t::get_reaper () const
 {
-    return _reaper;
+    return _reaper.get();
 }
 
 zmq::thread_ctx_t::thread_ctx_t () :
@@ -667,7 +664,7 @@ void zmq::ctx_t::send_command (uint32_t tid_, const command_t &command_)
 zmq::io_thread_t *zmq::ctx_t::choose_io_thread (uint64_t affinity_)
 {
     if (_io_threads.empty ())
-        return NULL;
+        return ZMQ_NULL;
 
     //  Find the I/O thread with minimum load.
     int min_load = -1;

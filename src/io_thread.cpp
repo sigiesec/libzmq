@@ -38,20 +38,13 @@
 
 zmq::io_thread_t::io_thread_t (ctx_t *ctx_, uint32_t tid_) :
     object_t (ctx_, tid_),
-    _mailbox_handle (static_cast<poller_t::handle_t> (NULL))
+    _mailbox_handle (static_cast<poller_t::handle_t> (NULL)),
+    _poller (new (std::nothrow) poller_t (*ctx_))
 {
-    _poller = new (std::nothrow) poller_t (*ctx_);
-    alloc_assert (_poller);
-
     if (_mailbox.get_fd () != retired_fd) {
         _mailbox_handle = _poller->add_fd (_mailbox.get_fd (), this);
         _poller->set_pollin (_mailbox_handle);
     }
-}
-
-zmq::io_thread_t::~io_thread_t ()
-{
-    LIBZMQ_DELETE (_poller);
 }
 
 void zmq::io_thread_t::start () const
@@ -101,7 +94,9 @@ void zmq::io_thread_t::out_event ()
     zmq_assert (false);
 }
 
-void zmq::io_thread_t::timer_event (int)
+void zmq::io_thread_t::
+
+  timer_event (int)
 {
     //  No timers here. This function is never called.
     zmq_assert (false);
@@ -110,7 +105,7 @@ void zmq::io_thread_t::timer_event (int)
 zmq::poller_t *zmq::io_thread_t::get_poller () const
 {
     zmq_assert (_poller);
-    return _poller;
+    return _poller.get ();
 }
 
 void zmq::io_thread_t::process_stop ()

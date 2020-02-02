@@ -7,7 +7,7 @@
 #define LIBZMQ_DELETE(p_object)                                                \
     {                                                                          \
         delete p_object;                                                       \
-        p_object = 0;                                                          \
+        p_object = ZMQ_NULL;                                                          \
     }
 
 /******************************************************************************/

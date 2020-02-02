@@ -35,6 +35,7 @@
 #include "poller.hpp"
 #include "i_poll_events.hpp"
 #include "mailbox.hpp"
+#include "memory.hpp"
 
 namespace zmq
 {
@@ -42,15 +43,14 @@ class ctx_t;
 
 //  Generic part of the I/O thread. Polling-mechanism-specific features
 //  are implemented in separate "polling objects".
+//
+//  If the thread was started, it's necessary to call 'stop' before
+//  invoking destructor. Otherwise the destructor would hang up.
 
 class io_thread_t ZMQ_FINAL : public object_t, public i_poll_events
 {
   public:
     io_thread_t (zmq::ctx_t *ctx_, uint32_t tid_);
-
-    //  Clean-up. If the thread was started, it's necessary to call 'stop'
-    //  before invoking destructor. Otherwise the destructor would hang up.
-    ~io_thread_t () ZMQ_FINAL;
 
     //  Launch the physical thread.
     void start () const;
@@ -83,7 +83,7 @@ class io_thread_t ZMQ_FINAL : public object_t, public i_poll_events
     poller_t::handle_t _mailbox_handle;
 
     //  I/O multiplexing is performed using a poller object.
-    poller_t *_poller;
+    scoped_ptr_t<poller_t> _poller;
 
     ZMQ_NON_COPYABLE_NOR_MOVABLE (io_thread_t)
 };

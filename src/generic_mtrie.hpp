@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <set>
 
 #include "macros.hpp"
+#include "memory.hpp"
 #include "stdint.hpp"
 
 namespace zmq
@@ -107,8 +108,9 @@ template <typename T> class generic_mtrie_t
     rm_result rm_helper (prefix_t prefix_, size_t size_, value_t *value_);
     bool is_redundant () const;
 
+    // Not all nodes have pipes. To save space, we only allocate a set if needed. Not
     typedef std::set<value_t *> pipes_t;
-    pipes_t *_pipes;
+    scoped_ptr_t<pipes_t, ScopedPtrPolicy_Modifiable> _pipes;
 
     unsigned char _min;
     unsigned short _count;

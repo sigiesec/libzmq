@@ -135,6 +135,53 @@ template <typename T, int ID = 0> class array_t
 
     ZMQ_NON_COPYABLE_NOR_MOVABLE (array_t)
 };
+
+template <typename T> class ptr_vector_t
+{
+    struct vector_item_ptr
+    {
+        vector_item_ptr (T *const raw_ptr_) : _raw_ptr (raw_ptr_) {}
+
+        operator T * () { return _raw_ptr; }
+        operator const T * () const { return _raw_ptr; }
+
+        ~vector_item_ptr () { delete _raw_ptr; }
+
+        // This copy constructor actually moves, but it is not used outside
+        // this class.
+        vector_item_ptr (const vector_item_ptr &other_) :
+            _raw_ptr (other_._raw_ptr)
+        {
+            const_cast<vector_item_ptr &> (other_)._raw_ptr = ZMQ_NULL;
+        }
+
+      private:
+        T *_raw_ptr;
+    };
+
+    typedef std::vector<vector_item_ptr> raw_vector_t;
+
+  public:
+    typedef typename raw_vector_t::size_type size_type;
+    typedef typename raw_vector_t::const_iterator const_iterator;
+
+    void push_back (T *const ptr_) { _raw_vector.push_back (ptr_); }
+
+    void clear () { _raw_vector.clear (); }
+
+    bool empty () const { return _raw_vector.empty (); }
+    size_type size () const { return _raw_vector.size (); }
+
+    T *operator[] (size_type index_) { return _raw_vector[index_]; }
+    const T *operator[] (size_type index_) const { return _raw_vector[index_]; }
+
+    const_iterator begin () const { return _raw_vector.begin (); }
+    const_iterator end () const { return _raw_vector.end (); }
+
+  private:
+    raw_vector_t _raw_vector;
+};
+
 }
 
 #endif
