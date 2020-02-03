@@ -35,6 +35,160 @@
 #include "session_base.hpp"
 
 #ifdef ZMQ_HAVE_CURVE
+#ifdef ZMQ_USE_LIBSODIUM
+#define COMPILER_ASSERT(X) (void) sizeof (char[(X) ? 1 : -1])
+
+static int zmq_crypto_secretbox_detached (unsigned char *c,
+                                          unsigned char *mac,
+                                          const unsigned char *m,
+                                          unsigned long long mlen,
+                                          const unsigned char *n,
+                                          const unsigned char *k)
+{
+    crypto_onetimeauth_poly1305_state state;
+    unsigned char block0[64U];
+    unsigned char subkey[crypto_stream_salsa20_KEYBYTES];
+    unsigned long long i;
+
+    crypto_core_hsalsa20 (subkey, n, k, NULL);
+
+    if ((c > m && static_cast<unsigned long long> (c - m) < mlen)
+        || (m > c
+            && static_cast<unsigned long long> (m - c)
+                 < mlen)) { /* LCOV_EXCL_LINE */
+        memmove (c, m, mlen);
+        m = c;
+    }
+    memset (block0, 0U, crypto_secretbox_ZEROBYTES);
+    COMPILER_ASSERT (64U >= crypto_secretbox_ZEROBYTES);
+    unsigned long long mlen0 = mlen;
+    if (mlen0 > 64U - crypto_secretbox_ZEROBYTES) {
+        mlen0 = 64U - crypto_secretbox_ZEROBYTES;
+    }
+    for (i = 0U; i < mlen0; i++) {
+        block0[i + crypto_secretbox_ZEROBYTES] = m[i];
+    }
+    crypto_stream_salsa20_xor (
+      block0, block0, mlen0 + crypto_secretbox_ZEROBYTES, n + 16, subkey);
+    COMPILER_ASSERT (crypto_secretbox_ZEROBYTES
+                     >= crypto_onetimeauth_poly1305_KEYBYTES);
+    crypto_onetimeauth_poly1305_init (&state, block0);
+
+    for (i = 0U; i < mlen0; i++) {
+        c[i] = block0[crypto_secretbox_ZEROBYTES + i];
+    }
+    sodium_memzero (block0, sizeof block0);
+    if (mlen > mlen0) {
+        crypto_stream_salsa20_xor_ic (c + mlen0, m + mlen0, mlen - mlen0,
+                                      n + 16, 1U, subkey);
+    }
+    sodium_memzero (subkey, sizeof subkey);
+
+    crypto_onetimeauth_poly1305_update (&state, c, mlen);
+    crypto_onetimeauth_poly1305_final (&state, mac);
+    sodium_memzero (&state, sizeof state);
+
+    return 0;
+}
+
+static int zmq_crypto_secretbox_open_detached (unsigned char *m,
+                                               const unsigned char *c,
+                                               const unsigned char *mac,
+                                               unsigned long long clen,
+                                               const unsigned char *n,
+                                               const unsigned char *k)
+{
+    unsigned char block0[64U];
+    unsigned char subkey[crypto_stream_salsa20_KEYBYTES];
+    unsigned long long i;
+
+    crypto_core_hsalsa20 (subkey, n, k, NULL);
+    crypto_stream_salsa20 (block0, crypto_stream_salsa20_KEYBYTES, n + 16,
+                           subkey);
+    if (crypto_onetimeauth_poly1305_verify (mac, c, clen, block0) != 0) {
+        sodium_memzero (subkey, sizeof subkey);
+        return -1;
+    }
+    if (m == NULL) {
+        return 0;
+    }
+    if ((c >= m && static_cast<unsigned long long> (c - m) < clen)
+        || (m >= c
+            && static_cast<unsigned long long> (m - c)
+                 < clen)) { /* LCOV_EXCL_LINE */
+        memmove (m, c, clen);
+        c = m;
+    }
+    unsigned long long mlen0 = clen;
+    if (mlen0 > 64U - crypto_secretbox_ZEROBYTES) {
+        mlen0 = 64U - crypto_secretbox_ZEROBYTES;
+    }
+    for (i = 0U; i < mlen0; i++) {
+        block0[crypto_secretbox_ZEROBYTES + i] = c[i];
+    }
+    crypto_stream_salsa20_xor (
+      block0, block0, crypto_secretbox_ZEROBYTES + mlen0, n + 16, subkey);
+    for (i = 0U; i < mlen0; i++) {
+        m[i] = block0[i + crypto_secretbox_ZEROBYTES];
+    }
+    if (clen > mlen0) {
+        crypto_stream_salsa20_xor_ic (m + mlen0, c + mlen0, clen - mlen0,
+                                      n + 16, 1U, subkey);
+    }
+    sodium_memzero (subkey, sizeof subkey);
+
+    return 0;
+}
+
+
+static int zmq_crypto_box_detached_afternm (unsigned char *c,
+                                            unsigned char *mac,
+                                            const unsigned char *m,
+                                            unsigned long long mlen,
+                                            const unsigned char *n,
+                                            const unsigned char *k)
+{
+    return zmq_crypto_secretbox_detached (c, mac, m, mlen, n, k);
+}
+
+static int zmq_crypto_box_easy_afternm (unsigned char *c,
+                                        const unsigned char *m,
+                                        unsigned long long mlen,
+                                        const unsigned char *n,
+                                        const unsigned char *k)
+{
+    if (mlen > crypto_box_MESSAGEBYTES_MAX) {
+        sodium_misuse ();
+    }
+    return zmq_crypto_box_detached_afternm (c + crypto_box_MACBYTES, c, m, mlen,
+                                            n, k);
+}
+
+static int zmq_crypto_box_open_detached_afternm (unsigned char *m,
+                                                 const unsigned char *c,
+                                                 const unsigned char *mac,
+                                                 unsigned long long clen,
+                                                 const unsigned char *n,
+                                                 const unsigned char *k)
+{
+    return zmq_crypto_secretbox_open_detached (m, c, mac, clen, n, k);
+}
+
+static int zmq_crypto_box_open_easy_afternm (unsigned char *m,
+                                             const unsigned char *c,
+                                             unsigned long long clen,
+                                             const unsigned char *n,
+                                             const unsigned char *k)
+{
+    if (clen < crypto_box_MACBYTES) {
+        return -1;
+    }
+    return zmq_crypto_box_open_detached_afternm (
+      m, c + crypto_box_MACBYTES, c, clen - crypto_box_MACBYTES, n, k);
+}
+
+#endif
+
 zmq::curve_mechanism_base_t::curve_mechanism_base_t (
   session_base_t *session_,
   const options_t &options_,
@@ -154,7 +308,7 @@ int zmq::curve_encoding_t::encode (msg_t *msg_)
       msg_box.init_size (message_header_len + mlen + crypto_box_MACBYTES);
     zmq_assert (rc == 0);
 
-    rc = crypto_box_easy_afternm (
+    rc = zmq_crypto_box_easy_afternm (
       static_cast<uint8_t *> (msg_box.data ()) + message_header_len,
       &message_plaintext[0], mlen, message_nonce, _cn_precom);
     zmq_assert (rc == 0);
@@ -208,9 +362,9 @@ int zmq::curve_encoding_t::decode (msg_t *msg_, int *error_event_code_)
 
     uint8_t *const message_plaintext = message + message_header_len;
 
-    rc = crypto_box_open_easy_afternm (message_plaintext,
-                                       message + message_header_len, clen,
-                                       message_nonce, _cn_precom);
+    rc = zmq_crypto_box_open_easy_afternm (message_plaintext,
+                                           message + message_header_len, clen,
+                                           message_nonce, _cn_precom);
 #else
     const size_t clen =
       crypto_box_BOXZEROBYTES + msg_->size () - message_header_len;
