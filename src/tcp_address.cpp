@@ -348,10 +348,10 @@ bool zmq::tcp_address_mask_t::match_address (const struct sockaddr *ss_,
             return false;
 
         const uint8_t last_byte_bits = 0xffU << (8 - mask % 8);
-        if (last_byte_bits) {
-            if ((their_bytes[full_bytes] & last_byte_bits)
-                != (our_bytes[full_bytes] & last_byte_bits))
-                return false;
+        if (last_byte_bits
+            && (their_bytes[full_bytes] & last_byte_bits)
+                 != (our_bytes[full_bytes] & last_byte_bits)) {
+            return false;
         }
     }
 

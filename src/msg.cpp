@@ -220,20 +220,18 @@ int zmq::msg_t::close ()
         return -1;
     }
 
-    if (_u.base.type == type_lmsg) {
-        //  If the content is not shared, or if it is shared and the reference
-        //  count has dropped to zero, deallocate it.
-        if (!(_u.lmsg.flags & msg_t::shared)
-            || !_u.lmsg.content->refcnt.sub (1)) {
-            //  We used "placement new" operator to initialize the reference
-            //  counter so we call the destructor explicitly now.
-            _u.lmsg.content->refcnt.~atomic_counter_t ();
+    //  If the content is not shared, or if it is shared and the reference
+    //  count has dropped to zero, deallocate it.
+    if (_u.base.type == type_lmsg
+        && (0 == (_u.lmsg.flags & msg_t::shared)
+            || 0 == _u.lmsg.content->refcnt.sub (1))) {
+        //  We used "placement new" operator to initialize the reference
+        //  counter so we call the destructor explicitly now.
+        _u.lmsg.content->refcnt.~atomic_counter_t ();
 
-            if (_u.lmsg.content->ffn)
-                _u.lmsg.content->ffn (_u.lmsg.content->data,
-                                      _u.lmsg.content->hint);
-            free (_u.lmsg.content);
-        }
+        if (_u.lmsg.content->ffn)
+            _u.lmsg.content->ffn (_u.lmsg.content->data, _u.lmsg.content->hint);
+        free (_u.lmsg.content);
     }
 
     if (is_zcmsg ()) {

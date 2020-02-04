@@ -384,9 +384,9 @@ zmq::fd_t zmq::tcp_open_socket (const char *address_,
         tcp_tune_loopback_fast_path (s);
 
     // Bind the socket to a device if applicable
-    if (!options_.bound_device.empty ())
-        if (bind_to_device (s, options_.bound_device) == -1)
-            goto setsockopt_error;
+    if (!options_.bound_device.empty ()
+        && bind_to_device (s, options_.bound_device) == -1)
+        goto setsockopt_error;
 
     //  Set the socket buffer limits for the underlying socket.
     if (options_.sndbuf >= 0)

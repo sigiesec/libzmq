@@ -112,18 +112,17 @@ int zmq::ipc_listener_t::set_local_address (const char *addr_)
     std::string addr (addr_);
 
     //  Allow wildcard file
-    if (options.use_fd == -1 && addr[0] == '*') {
-        if (create_ipc_wildcard_address (_tmp_socket_dirname, addr) < 0) {
+    if (options.use_fd == -1) {
+        if (addr[0] == '*'
+            && create_ipc_wildcard_address (_tmp_socket_dirname, addr) < 0) {
             return -1;
         }
-    }
 
-    //  Get rid of the file associated with the UNIX domain socket that
-    //  may have been left behind by the previous run of the application.
-    //  MUST NOT unlink if the FD is managed by the user, or it will stop
-    //  working after the first client connects. The user will take care of
-    //  cleaning up the file after the service is stopped.
-    if (options.use_fd == -1) {
+        //  Get rid of the file associated with the UNIX domain socket that
+        //  may have been left behind by the previous run of the application.
+        //  MUST NOT unlink if the FD is managed by the user, or it will stop
+        //  working after the first client connects. The user will take care of
+        //  cleaning up the file after the service is stopped.
         ::unlink (addr.c_str ());
     }
     _filename.clear ();

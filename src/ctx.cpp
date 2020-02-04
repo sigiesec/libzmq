@@ -486,9 +486,8 @@ zmq::socket_base_t *zmq::ctx_t::create_socket (int type_)
         return NULL;
     }
 
-    if (unlikely (_starting)) {
-        if (!start ())
-            return NULL;
+    if (unlikely (_starting) && !start ()) {
+        return NULL;
     }
 
     //  If max_sockets limit was reached, return error.
@@ -502,7 +501,7 @@ zmq::socket_base_t *zmq::ctx_t::create_socket (int type_)
     _empty_slots.pop_back ();
 
     //  Generate new unique socket ID.
-    const int sid = (static_cast<int> (max_socket_id.add (1))) + 1;
+    const int sid = static_cast<int> (max_socket_id.add (1)) + 1;
 
     //  Create the socket and register its mailbox.
     socket_base_t *s = socket_base_t::create (type_, this, slot, sid);

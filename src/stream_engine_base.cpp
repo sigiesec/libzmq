@@ -163,10 +163,8 @@ zmq::stream_engine_base_t::~stream_engine_base_t ()
 
     //  Drop reference to metadata and destroy it if we are
     //  the only user.
-    if (_metadata != NULL) {
-        if (_metadata->drop_ref ()) {
-            LIBZMQ_DELETE (_metadata);
-        }
+    if (_metadata != NULL && _metadata->drop_ref ()) {
+        LIBZMQ_DELETE (_metadata);
     }
 
     LIBZMQ_DELETE (_encoder);
@@ -379,9 +377,9 @@ void zmq::stream_engine_base_t::out_event ()
 
     //  If we are still handshaking and there are no data
     //  to send, stop polling for output.
-    if (unlikely (_handshaking))
-        if (_outsize == 0)
-            reset_pollout ();
+    if (unlikely (_handshaking) && 0 == _outsize) {
+        reset_pollout ();
+    }
 }
 
 void zmq::stream_engine_base_t::restart_output ()
@@ -501,11 +499,9 @@ void zmq::stream_engine_base_t::zap_msg_available ()
         error (protocol_error);
         return;
     }
-    if (_input_stopped)
-        if (!restart_input ())
-            return;
-    if (_output_stopped)
+    if ((!_input_stopped || restart_input ()) && _output_stopped) {
         restart_output ();
+    }
 }
 
 const zmq::endpoint_uri_pair_t &zmq::stream_engine_base_t::get_endpoint () const
@@ -604,9 +600,7 @@ int zmq::stream_engine_base_t::pull_and_encode (msg_t *msg_)
 {
     zmq_assert (_mechanism != NULL);
 
-    if (_session->pull_msg (msg_) == -1)
-        return -1;
-    if (_mechanism->encode (msg_) == -1)
+    if (_session->pull_msg (msg_) == -1 || _mechanism->encode (msg_) == -1)
         return -1;
     return 0;
 }

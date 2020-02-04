@@ -94,9 +94,9 @@ int zmq::tipc_address_t::resolve (const char *name_)
 
     res = sscanf (name_, "{%u,%u,%u}", &type, &lower, &upper);
     /* Fetch optional domain suffix. */
-    if ((domain = strchr (name_, '@'))) {
-        if (sscanf (domain, "@%u.%u.%u%c", &z, &c, &n, &eof) != 3)
-            return EINVAL;
+    if ((domain = strchr (name_, '@'))
+        && sscanf (domain, "@%u.%u.%u%c", &z, &c, &n, &eof) != 3) {
+        return EINVAL;
     }
     if (res == 3) {
         if (type < TIPC_RESERVED_TYPES || upper < lower)

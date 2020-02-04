@@ -193,37 +193,36 @@ void zmq::zmtp_engine_t::receive_greeting_versioned ()
         _outpos[_outsize++] = 3; //  Major version number
     }
 
-    if (_greeting_bytes_read > signature_size) {
-        if (_outpos + _outsize == _greeting_send + signature_size + 1) {
-            if (_outsize == 0)
-                set_pollout ();
+    if (_greeting_bytes_read > signature_size
+        && _outpos + _outsize == _greeting_send + signature_size + 1) {
+        if (_outsize == 0)
+            set_pollout ();
 
-            //  Use ZMTP/2.0 to talk to older peers.
-            if (_greeting_recv[revision_pos] == ZMTP_1_0
-                || _greeting_recv[revision_pos] == ZMTP_2_0)
-                _outpos[_outsize++] = _options.type;
-            else {
-                _outpos[_outsize++] = 0; //  Minor version number
-                memset (_outpos + _outsize, 0, 20);
+        //  Use ZMTP/2.0 to talk to older peers.
+        if (_greeting_recv[revision_pos] == ZMTP_1_0
+            || _greeting_recv[revision_pos] == ZMTP_2_0)
+            _outpos[_outsize++] = _options.type;
+        else {
+            _outpos[_outsize++] = 0; //  Minor version number
+            memset (_outpos + _outsize, 0, 20);
 
-                zmq_assert (_options.mechanism == ZMQ_NULL
-                            || _options.mechanism == ZMQ_PLAIN
-                            || _options.mechanism == ZMQ_CURVE
-                            || _options.mechanism == ZMQ_GSSAPI);
+            zmq_assert (_options.mechanism == ZMQ_NULL
+                        || _options.mechanism == ZMQ_PLAIN
+                        || _options.mechanism == ZMQ_CURVE
+                        || _options.mechanism == ZMQ_GSSAPI);
 
-                if (_options.mechanism == ZMQ_NULL)
-                    memcpy (_outpos + _outsize, "NULL", 4);
-                else if (_options.mechanism == ZMQ_PLAIN)
-                    memcpy (_outpos + _outsize, "PLAIN", 5);
-                else if (_options.mechanism == ZMQ_GSSAPI)
-                    memcpy (_outpos + _outsize, "GSSAPI", 6);
-                else if (_options.mechanism == ZMQ_CURVE)
-                    memcpy (_outpos + _outsize, "CURVE", 5);
-                _outsize += 20;
-                memset (_outpos + _outsize, 0, 32);
-                _outsize += 32;
-                _greeting_size = v3_greeting_size;
-            }
+            if (_options.mechanism == ZMQ_NULL)
+                memcpy (_outpos + _outsize, "NULL", 4);
+            else if (_options.mechanism == ZMQ_PLAIN)
+                memcpy (_outpos + _outsize, "PLAIN", 5);
+            else if (_options.mechanism == ZMQ_GSSAPI)
+                memcpy (_outpos + _outsize, "GSSAPI", 6);
+            else if (_options.mechanism == ZMQ_CURVE)
+                memcpy (_outpos + _outsize, "CURVE", 5);
+            _outsize += 20;
+            memset (_outpos + _outsize, 0, 32);
+            _outsize += 32;
+            _greeting_size = v3_greeting_size;
         }
     }
 }

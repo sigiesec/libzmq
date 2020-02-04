@@ -339,12 +339,10 @@ int zmq::socks_response_decoder_t::input (fd_t fd_)
         _bytes_read += static_cast<size_t> (rc);
         if (_buf[0] != 0x05)
             return -1;
-        if (_bytes_read >= 2)
-            if (_buf[1] > 0x08)
-                return -1;
-        if (_bytes_read >= 3)
-            if (_buf[2] != 0x00)
-                return -1;
+        if (_bytes_read >= 2 && _buf[1] > 0x08)
+            return -1;
+        if (_bytes_read >= 3 && _buf[2] != 0x00)
+            return -1;
         if (_bytes_read >= 4) {
             const uint8_t atyp = _buf[3];
             if (atyp != 0x01 && atyp != 0x03 && atyp != 0x04)

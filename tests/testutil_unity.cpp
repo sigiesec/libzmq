@@ -182,9 +182,8 @@ static void internal_manage_test_sockets (void *socket_, bool add_)
                 if (test_sockets[i] == socket_) {
                     found = true;
                 }
-                if (found) {
-                    if (i < test_socket_count)
-                        test_sockets[i] = test_sockets[i + 1];
+                if (found && i < test_socket_count) {
+                    test_sockets[i] = test_sockets[i + 1];
                 }
             }
             TEST_ASSERT_TRUE_MESSAGE (found,

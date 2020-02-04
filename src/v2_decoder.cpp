@@ -95,11 +95,11 @@ int zmq::v2_decoder_t::size_ready (uint64_t msg_size_,
                                    unsigned char const *read_pos_)
 {
     //  Message size must not exceed the maximum allowed size.
-    if (_max_msg_size >= 0)
-        if (unlikely (msg_size_ > static_cast<uint64_t> (_max_msg_size))) {
-            errno = EMSGSIZE;
-            return -1;
-        }
+    if (_max_msg_size >= 0
+        && unlikely (msg_size_ > static_cast<uint64_t> (_max_msg_size))) {
+        errno = EMSGSIZE;
+        return -1;
+    }
 
     //  Message size must fit into size_t data type.
     if (unlikely (msg_size_ != static_cast<size_t> (msg_size_))) {

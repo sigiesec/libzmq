@@ -837,15 +837,13 @@ int zmq::socket_base_t::connect (const char *endpoint_uri_)
         return 0;
     }
     const bool is_single_connect =
-      (options.type == ZMQ_DEALER || options.type == ZMQ_SUB
-       || options.type == ZMQ_PUB || options.type == ZMQ_REQ);
-    if (unlikely (is_single_connect)) {
-        if (0 != _endpoints.count (endpoint_uri_)) {
-            // There is no valid use for multiple connects for SUB-PUB nor
-            // DEALER-ROUTER nor REQ-REP. Multiple connects produces
-            // nonsensical results.
-            return 0;
-        }
+      options.type == ZMQ_DEALER || options.type == ZMQ_SUB
+      || options.type == ZMQ_PUB || options.type == ZMQ_REQ;
+    if (unlikely (is_single_connect) && 0 != _endpoints.count (endpoint_uri_)) {
+        // There is no valid use for multiple connects for SUB-PUB nor
+        // DEALER-ROUTER nor REQ-REP. Multiple connects produces
+        // nonsensical results.
+        return 0;
     }
 
     //  Choose the I/O thread to run the session in.
@@ -1186,17 +1184,16 @@ int zmq::socket_base_t::send (msg_t *msg_, int flags_)
     if (rc == 0) {
         return 0;
     }
+    const bool may_block = !((flags_ & ZMQ_DONTWAIT) || options.sndtimeo == 0);
     //  Special case for ZMQ_PUSH: -2 means pipe is dead while a
     //  multi-part send is in progress and can't be recovered, so drop
     //  silently when in blocking mode to keep backward compatibility.
-    if (unlikely (rc == -2)) {
-        if (!((flags_ & ZMQ_DONTWAIT) || options.sndtimeo == 0)) {
-            rc = msg_->close ();
-            errno_assert (rc == 0);
-            rc = msg_->init ();
-            errno_assert (rc == 0);
-            return 0;
-        }
+    if (unlikely (rc == -2) && may_block) {
+        rc = msg_->close ();
+        errno_assert (rc == 0);
+        rc = msg_->init ();
+        errno_assert (rc == 0);
+        return 0;
     }
     if (unlikely (errno != EAGAIN)) {
         return -1;
@@ -1204,7 +1201,7 @@ int zmq::socket_base_t::send (msg_t *msg_, int flags_)
 
     //  In case of non-blocking send we'll simply propagate
     //  the error - including EAGAIN - up the stack.
-    if ((flags_ & ZMQ_DONTWAIT) || options.sndtimeo == 0) {
+    if (!may_block) {
         return -1;
     }
 
