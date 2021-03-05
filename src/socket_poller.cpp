@@ -147,13 +147,17 @@ int zmq::socket_poller_t::add (socket_base_t *socket_,
         -1
 #endif
     };
+#if 0
     try {
-        _items.push_back (item);
+#endif
+    _items.push_back (item);
+#if 0
     }
     catch (const std::bad_alloc &) {
         errno = ENOMEM;
         return -1;
     }
+#endif
     _need_rebuild = true;
 
     return 0;
@@ -177,13 +181,17 @@ int zmq::socket_poller_t::add_fd (fd_t fd_, void *user_data_, short events_)
         -1
 #endif
     };
+#if 0
     try {
-        _items.push_back (item);
+#endif
+    _items.push_back (item);
+#if 0
     }
     catch (const std::bad_alloc &) {
         errno = ENOMEM;
         return -1;
     }
+#endif
     _need_rebuild = true;
 
     return 0;

@@ -413,14 +413,18 @@ bool zmq::ctx_t::start ()
     const int ios = _io_thread_count;
     _opt_sync.unlock ();
     const int slot_count = mazmq + ios + term_and_reaper_threads_count;
+#if 0
     try {
-        _slots.reserve (slot_count);
-        _empty_slots.reserve (slot_count - term_and_reaper_threads_count);
+#endif
+    _slots.reserve (slot_count);
+    _empty_slots.reserve (slot_count - term_and_reaper_threads_count);
+#if 0
     }
     catch (const std::bad_alloc &) {
         errno = ENOMEM;
         return false;
     }
+#endif
     _slots.resize (term_and_reaper_threads_count);
 
     //  Initialise the infrastructure for zmq_ctx_term thread.
